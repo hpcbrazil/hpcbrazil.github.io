@@ -6,17 +6,8 @@
 <title>Observatório HPC & IA — Brasil (GitHub Pages, online)</title>
 
 <!-- Leaflet (mapa online) -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""
-/>
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <!-- PapaParse (CSV online) -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -58,7 +49,7 @@
   .drop{margin:10px 0;padding:10px;border:1px dashed #334155;border-radius:10px;font-size:12px;color:var(--muted);text-align:center}
   /* Modal mapeamento */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
-  .modal .box{background:#0b1220;border:1px solid var(--border);border-radius:16px;padding:16px;max-width:880px;width:96%}
+  .modal .box{background:#0b1220;border:1px solid var(--border);border-radius:16px;padding:16px;max-width:900px;width:96%}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .req{color:#f43f5e;font-weight:600;margin-left:4px}
   .small{font-size:12px;color:var(--muted)}
@@ -82,7 +73,7 @@
       <button class="btn" id="configColsBtn">Configurar colunas</button>
       <button class="btn" id="resetColsBtn" title="Apagar mapeamento salvo">Redefinir mapeamento</button>
     </div>
-    <div class="small">O CSV deve ter a <b>primeira linha como cabeçalho</b> (título das colunas). Dica: use <code>?csv=URL</code> na barra do navegador para auto-carregar.</div>
+    <div class="small">O CSV deve ter a <b>primeira linha como cabeçalho</b>. Para máxima precisão, inclua colunas <b>Latitude</b> e <b>Longitude</b> e mapeie-as no modal.</div>
 
     <h2>Filtros</h2>
     <label for="estadoSel">Estado</label><select id="estadoSel"><option value="">Todos</option></select>
@@ -122,7 +113,6 @@
         <div class="card"><h3>Grupos por Estado</h3><div class="muted" id="topEstados">—</div></div>
         <div class="card"><h3>Uso de IA &amp; Tipo</h3><div class="muted" id="distIAETipo">—</div></div>
       </div>
-
       <div style="margin-top:10px">
         <table id="tabela"><thead><tr id="theadRow"></tr></thead><tbody id="tbody"></tbody></table>
       </div>
@@ -147,6 +137,8 @@
       <div><label>Site</label><select id="col_site"></select></div>
       <div><label>E-mail</label><select id="col_email"></select></div>
       <div><label>Cluster &gt; 50 TF?</label><select id="col_temCluster50"></select></div>
+      <div><label>Latitude</label><select id="col_lat"></select></div>
+      <div><label>Longitude</label><select id="col_lng"></select></div>
     </div>
     <div class="controls" style="margin-top:12px">
       <button class="btn" id="autoMapBtn">Preencher automaticamente</button>
@@ -165,21 +157,47 @@
 <script>
 /* ===== LEAFLET MAP ===== */
 const map = L.map('leaf', { zoomControl: true, minZoom: 3, maxZoom: 18 });
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-});
-osm.addTo(map);
-// Brasil ~ centro
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
 map.setView([-14.235, -51.925], 4);
 
-// camada de marcadores
 const markersLayer = L.layerGroup().addTo(map);
 
-/* ===== GEO APOIO (capitais + fallback) ===== */
+/* ===== GEO APOIO ===== */
 const UF_INFO={"AC":{"cap":"Rio Branco","lat":-9.975,"lon":-67.823},"AL":{"cap":"Maceió","lat":-9.649,"lon":-35.708},"AP":{"cap":"Macapá","lat":0.035,"lon":-51.07},"AM":{"cap":"Manaus","lat":-3.118,"lon":-60.021},"BA":{"cap":"Salvador","lat":-12.972,"lon":-38.501},"CE":{"cap":"Fortaleza","lat":-3.731,"lon":-38.51},"DF":{"cap":"Brasília","lat":-15.793,"lon":-47.882},"ES":{"cap":"Vitória","lat":-20.315,"lon":-40.312},"GO":{"cap":"Goiânia","lat":-16.68,"lon":-49.256},"MA":{"cap":"São Luís","lat":-2.53,"lon":-44.306},"MT":{"cap":"Cuiabá","lat":-15.601,"lon":-56.097},"MS":{"cap":"Campo Grande","lat":-20.469,"lon":-54.62},"MG":{"cap":"Belo Horizonte","lat":-19.916,"lon":-43.934},"PA":{"cap":"Belém","lat":-1.456,"lon":-48.501},"PB":{"cap":"João Pessoa","lat":-7.119,"lon":-34.845},"PR":{"cap":"Curitiba","lat":-25.428,"lon":-49.273},"PE":{"cap":"Recife","lat":-8.054,"lon":-34.881},"PI":{"cap":"Teresina","lat":-5.092,"lon":-42.803},"RJ":{"cap":"Rio de Janeiro","lat":-22.906,"lon":-43.172},"RN":{"cap":"Natal","lat":-5.795,"lon":-35.209},"RS":{"cap":"Porto Alegre","lat":-30.034,"lon":-51.217},"RO":{"cap":"Porto Velho","lat":-8.761,"lon":-63.903},"RR":{"cap":"Boa Vista","lat":2.823,"lon":-60.675},"SC":{"cap":"Florianópolis","lat":-27.595,"lon":-48.549},"SP":{"cap":"São Paulo","lat":-23.55,"lon":-46.633},"SE":{"cap":"Aracaju","lat":-10.947,"lon":-37.073},"TO":{"cap":"Palmas","lat":-10.184,"lon":-48.333}};
 const UF_BY_NAME={"Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goías":"GO","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO"};
-function ufToAcronym(e){if(!e)return null; if(e.length===2&&e.toUpperCase()===e)return e; return UF_BY_NAME[String(e).trim()]||e;}
+const VALID_UF = new Set(Object.keys(UF_INFO));
+
+function rmAccents(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function normalizeUF(raw, cityVal){
+  let s = String(raw||'').trim();
+  if(!s && cityVal){ // tentar extrair UF do padrão "Cidade - UF"
+    const m = String(cityVal).match(/\b([A-Za-z]{2})\b/);
+    if(m && VALID_UF.has(m[1].toUpperCase())) return m[1].toUpperCase();
+  }
+  // caso 2 letras qualquer caixa
+  if(s.length>=2){
+    // pegar UF dentro de parênteses ou após hífen
+    const mPar = s.match(/\(([A-Za-z]{2})\)/);
+    if(mPar && VALID_UF.has(mPar[1].toUpperCase())) return mPar[1].toUpperCase();
+    const mHy = s.match(/[-\/]\s*([A-Za-z]{2})\b/);
+    if(mHy && VALID_UF.has(mHy[1].toUpperCase())) return mHy[1].toUpperCase();
+    // duas letras “soltas” no fim
+    const mEnd = s.match(/\b([A-Za-z]{2})\s*$/);
+    if(mEnd && VALID_UF.has(mEnd[1].toUpperCase())) return mEnd[1].toUpperCase();
+    // exatamente duas letras
+    if(s.replace(/\s+/g,'').length===2) return s.toUpperCase();
+  }
+  // por nome do estado (com/sem acento)
+  const sClean = rmAccents(s);
+  for(const [nome,uf] of Object.entries(UF_BY_NAME)){
+    if(rmAccents(nome).toLowerCase() === sClean.toLowerCase()) return uf;
+  }
+  return null;
+}
+
 function hashCode(s){let h=0;s=String(s||"");for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h);}
 function cityLatLng(city,uf){
   const info=UF_INFO[uf]; if(!info) return null;
@@ -193,24 +211,18 @@ function cityLatLng(city,uf){
 /* ===== ESTADO DA APLICAÇÃO ===== */
 let rawData=[], headers=[], filtered=[], selectionActive=false, selectionFiltered=[], columnsMap={}, leafletMarkers=[];
 const REQUIRED_KEYS = ['estado', 'nomeGrupo'];
-const selectIds=['estado','cidade','nomeGrupo','instituicao','tipoInst','usaIA','linhas','setor','site','email','temCluster50'];
+const selectIds=['estado','cidade','nomeGrupo','instituicao','tipoInst','usaIA','linhas','setor','site','email','temCluster50','lat','lng'];
 const tableCols=['Grupo','Instituição','Tipo','Estado','Cidade','Usa IA?','Linhas de pesquisa','Setor','Site','E-mail'];
 let sortState={idx:0,asc:true};
 
 /* ===== PARSE CSV (PapaParse) ===== */
 function parseCSVText(text){
-  const result = Papa.parse(text, {
-    header: true,
-    skipEmptyLines: 'greedy',
-    dynamicTyping: false
-  });
-  if (result.errors && result.errors.length){
-    console.warn('PapaParse errors:', result.errors);
-  }
+  const result = Papa.parse(text, { header: true, skipEmptyLines: 'greedy', dynamicTyping: false });
+  if (result.errors && result.errors.length) console.warn('PapaParse errors:', result.errors);
   return { headers: result.meta.fields || [], rows: result.data || [] };
 }
 
-/* ===== MAPEAR COLUNAS (guess + modal) ===== */
+/* ===== MAPEAR COLUNAS ===== */
 function guessColumns(cols){
   const find = (patterns)=> cols.find(c => patterns.some(p => new RegExp(p,'i').test(c))) || '';
   return {
@@ -224,7 +236,9 @@ function guessColumns(cols){
     site: find(['Link do site oficial','^Site','Website','URL']),
     email: find(['E-mail de contato','Email','^E-?mail']),
     setor: find(['^Setor econ','^Setor$']),
-    temCluster50: find(['cluster.*50\\s*TFlops','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF'])
+    temCluster50: find(['cluster.*50\\s*TFlops','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF']),
+    lat: find(['^lat$','latitude','^Lat(?:itude)?$']),
+    lng: find(['^lon$','^lng$','longitude','^Long(?:itude)?$'])
   };
 }
 function optListFromHeaders(headers, includeNone){
@@ -353,11 +367,24 @@ function mkStyle(ia,cl){
   else if(!i && c) color = '#fb923c';
   return { radius: 7, color:'#0b0f14', weight:2, fillColor:color, fillOpacity:0.95 };
 }
+function getLatLngForRow(r){
+  // 1) Preferir lat/lon do CSV (preciso)
+  if(columnsMap.lat && columnsMap.lng){
+    const lat = parseFloat(String(r[columnsMap.lat]||'').replace(',','.'));
+    const lng = parseFloat(String(r[columnsMap.lng]||'').replace(',','.'));
+    if(Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat)<=90 && Math.abs(lng)<=180){
+      return [lat,lng];
+    }
+  }
+  // 2) Normalizar UF e usar cidade + UF (fallback)
+  const uf = normalizeUF(r[columnsMap.estado], columnsMap.cidade? r[columnsMap.cidade] : '');
+  if(!uf) return null;
+  return cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+}
 function drawMarkers(v){
   markersLayer.clearLayers(); leafletMarkers = [];
   v.forEach(r=>{
-    const uf = ufToAcronym(r[columnsMap.estado]||"");
-    const ll = cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+    const ll = getLatLngForRow(r);
     if(!ll) return;
     const style = mkStyle(columnsMap.usaIA? r[columnsMap.usaIA] : '', columnsMap.temCluster50? r[columnsMap.temCluster50] : '');
     const nome=r[columnsMap.nomeGrupo]||'—', inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—', est=r[columnsMap.estado]||'—', cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—', ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
@@ -374,8 +401,7 @@ function fitToMarkers(){
   map.fitBounds(group.getBounds().pad(0.15), { animate:true });
 }
 function isRowInViewport(r){
-  const uf = ufToAcronym(r[columnsMap.estado]||"");
-  const ll = cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+  const ll = getLatLngForRow(r);
   if(!ll) return false;
   return map.getBounds().contains(ll);
 }
@@ -389,7 +415,7 @@ document.getElementById('selecionarMapaBtn').onclick=()=>{selectionFiltered=filt
 document.getElementById('limparSelecaoBtn').onclick=()=>{selectionActive=false;selectionFiltered=[];document.getElementById('limparSelecaoBtn').style.display='none';renderAll();drawMarkers(getActiveView());statusMsg.textContent='';};
 map.on('moveend',()=>{ if(selectionActive){ selectionFiltered=filtered.filter(isRowInViewport); renderAll(); drawMarkers(getActiveView()); }});
 
-/* ===== CARREGAR CSV (arquivo local / drag&drop / URL / ?csv=) ===== */
+/* ===== CARREGAR CSV (arquivo / URL / ?csv=) ===== */
 const fileInput=document.getElementById('fileInput'), drop=document.getElementById('drop');
 fileInput.addEventListener('change',e=>{const f=e.target.files[0]; if(f){ const reader=new FileReader(); reader.onload=()=>bootWithCSV(reader.result); reader.readAsText(f); }});
 ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor='#4b5563';}));
