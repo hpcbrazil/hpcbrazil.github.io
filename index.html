@@ -1,387 +1,437 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HPC in Brazil</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Observatório HPC & IA — Brasil (GitHub Pages, online)</title>
+
+<!-- Leaflet (mapa online) -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<!-- PapaParse (CSV online) -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  :root{--bg:#0b0f14;--panel:#111826;--muted:#94a3b8;--border:#1f2937;--text:#e5e7eb;--green:#10b981;--gold:#f59e0b;--orange:#fb923c;--slate:#94a3b8;--accent:#38bdf8}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;background:var(--bg);color:var(--text)}
+  header{padding:16px 20px;border-bottom:1px solid var(--border);background:#0d1320;position:sticky;top:0;z-index:30}
+  header h1{margin:0;font-size:18px}
+  .container{display:grid;grid-template-columns:440px 1fr;gap:14px;padding:14px}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px}
+  aside h2{margin:6px 0 8px;font-size:16px}
+  aside label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+  aside select, aside input[type=text], aside input[type=url]{width:100%;padding:8px 10px;border-radius:12px;background:#0b1220;border:1px solid var(--border);color:var(--text)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--border);font-size:12px;margin:2px 4px 0 0}
+  .btn{display:inline-block;padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#0b1220;color:var(--text);text-decoration:none;cursor:pointer}
+  .btn:hover{border-color:#334155}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .status{font-size:12px;color:var(--muted);margin-left:4px}
+  main{display:grid;grid-template-rows:min(62vh,640px) auto;gap:14px}
+  #leaf{width:100%;height:100%;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .legend{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+  .lg-dot{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #0b0f14}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:10px}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .card{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .card h3{font-size:14px;margin:4px 0 6px}
+  .muted{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid var(--border);font-size:13px}
+  th{user-select:none;cursor:pointer;text-align:left}
+  tr:hover td{background:#0b1220}
+  .results{margin-top:10px;background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:10px;max-height:340px;overflow:auto}
+  .result-item{border-bottom:1px dashed #1f2937;padding:6px 0}
+  .result-item:last-child{border-bottom:0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .chip{padding:2px 8px;border:1px solid var(--border);border-radius:10px;font-size:11px}
+  .drop{margin:10px 0;padding:10px;border:1px dashed #334155;border-radius:10px;font-size:12px;color:var(--muted);text-align:center}
+  /* Modal mapeamento */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal .box{background:#0b1220;border:1px solid var(--border);border-radius:16px;padding:16px;max-width:880px;width:96%}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .req{color:#f43f5e;font-weight:600;margin-left:4px}
+  .small{font-size:12px;color:var(--muted)}
+</style>
 </head>
 <body>
-    <header>
-        <h1>High-Performance Computing Centers in Brazil</h1>
-        <p>A map and list of major HPC centers and research groups across Brazil.</p>
-    </header>
-    
-    <section>
-        <h2>HPC Centers Map</h2>
-        <div id="map"></div>
-    </section>
-    
-    <section>
-        <h2>CENAPAD Centers</h2>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Institution</th>
-                <th>Coordinator</th>
-                <th>Website</th>
-            </tr>
-            <tr>
-                <td>Santos Dumont - LNCC</td>
-                <td>Petrópolis, RJ</td>
-                <td>Laboratório Nacional de Computação Científica (LNCC)</td>
-                <td>Antônio Tadeu Azevedo Gomes e Wagner Vieira Léo</td>
-                <td><a href="http://sdumont.lncc.br" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - LNCC</td>
-                <td>Petrópolis, RJ</td>
-                <td>Laboratório Nacional de Computação Científica (LNCC)</td>
-                <td>Carla Osthoff Ferreira de Barros</td>
-                <td><a href="http://www.cenapad-rj.lncc.br" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - UFRGS</td>
-                <td>Porto Alegre, RS</td>
-                <td>Universidade Federal do Rio Grande do Sul (UFRGS)</td>
-                <td>Lindolfo Meira</td>
-                <td><a href="http://www.cesup.ufrgs.br" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - UNICAMP</td>
-                <td>Campinas, SP</td>
-                <td>Universidade Estadual de Campinas (Unicamp)</td>
-                <td>Paulo J. S. Silva</td>
-                <td><a href="http://www.cenapad.unicamp.br" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - CPTEC/INPE</td>
-                <td>Cachoeira Paulista, SP</td>
-                <td>Instituto Nacional de Pesquisas Espaciais (INPE)</td>
-                <td>Eugênio Almeida</td>
-                <td><a href="http://www.cptec.inpe.br/" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - COPPE/RJ</td>
-                <td>Rio de Janeiro, RJ</td>
-                <td>Universidade Federal do Rio de Janeiro (UFRJ)</td>
-                <td>Alvaro Coutinho</td>
-                <td><a href="http://www.nacad.ufrj.br" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - UFMG</td>
-                <td>Belo Horizonte, MG</td>
-                <td>Universidade Federal de Minas Gerais (UFMG)</td>
-                <td>J. Miguel Ortega</td>
-                <td><a href="https://www.lcc.ufmg.br/" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - UFC</td>
-                <td>Fortaleza, CE</td>
-                <td>Universidade Federal do Ceará (UFC)</td>
-                <td>Rossana Andrade</td>
-                <td><a href="http://www.cenapad.ufc.br" target="_blank">Link</a></td>
-            </tr>
-            <tr>
-                <td>CENAPAD - UFPE</td>
-                <td>Recife, PE</td>
-                <td>Universidade Federal de Pernambuco (UFPE)</td>
-                <td>Ramiro Willmersdorf</td>
-                <td>-</td>
-            </tr>
-            <tr>
-                <td>CENAPAD - INPA</td>
-                <td>Manaus, AM</td>
-                <td>Instituto Nacional de Pesquisas da Amazônia (INPA)</td>
-                <td>José Laurindo Campos dos Santos</td>
-                <td><a href="http://cenapad-am.inpa.gov.br/" target="_blank">Link</a></td>
-            </tr>
-        </table>
-    </section>
-    
-    <section>
-        <h2>HPC Research Groups</h2>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Institution</th>
-                <th>Coordinator</th>
-                <th>Website</th>
-            </tr>
-            <tr>
-                <td>Arquitetura de Computadores e Processamento Paralelo (CArt)</td>
-                <td>Belo Horizonte - MG</td>
-                <td>PUC Minas</td>
-                <td>Henrique Cota de Freitas</td>
-                <td>--</td>
-            </tr>
-            
-            <tr>
-                <td>Grupo de Pesquisa em Processamento Paralelo e Distribuído (G3PD)</td>
-                <td>Pelotas - RS</td>
-                <td>UCPEL</td>
-                <td>Lizandro de Souza Oliveira</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Grupo de Processamento Paralelo e Distribuído (GPPD)</td>
-                <td>Porto Alegre - RS</td>
-                <td>UFRGS</td>
-                <td>Philippe Olivier Alexander Navaux</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Grupo de Pesquisa em Sistemas Computacionais de Alto Desempenho</td>
-                <td>Campo Grande - MS</td>
-                <td>UFMS</td>
-                <td>Ricardo Ribeiro dos Santos</td>
-                <td>--</td>
-            </tr>
-            
-            <tr>
-                <td>Computação de Alto Desempenho e Aplicações</td>
-                <td>Goiania - GO</td>
-                <td>UFG</td>
-                <td>Wellington Santos Martins</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Laboratório de Modelagem e Simulação Computacional de Alto Desempenho (LAMSCAD)</td>
-                <td>MT</td>
-                <td>UNEMAT</td>
-                <td>Gleber Nelson Marques</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Computação de Alto Desempenho e Sistemas Distribuídos</td>
-                <td>Curitiba - PR</td>
-                <td>UTFPR</td>
-                <td>Rogério Aparecido Gonçalves</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Sistemas computacionais de alto desempenho e aprendizado de máquina</td>
-                <td>Ponta Grossa - PR</td>
-                <td>UEPG</td>
-                <td>Luciano José Senger</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Grupo de Pesquisa em Engenharia de Software de Alto Desempenho (MuNDDoS)</td>
-                <td>Porto Alegre - RS</td>
-                <td>PURCS</td>
-                <td>Rafael Prikladnicki</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Computação de Alto Desempenho</td>
-                <td>Campo Grande - MS</td>
-                <td>UFMS</td>
-                <td>Marco Aurelio Stefanes</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Sistemas de Software, Ciência e Engenharia de Dados e Computação de Alto Desempenho</td>
-                <td>São Paulo - SP</td>
-                <td>USP</td>
-                <td>Alfredo Goldman vel Lejbman</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Computação de alto desempenho aplicada às Ciências Ambientais e Espaciais</td>
-                <td>São Paulo - SP</td>
-                <td>INPE</td>
-                <td>Stephan Stephany</td>
-                <td>--</td>
-            </tr>
+<header>
+  <h1>Observatório HPC & IA — Brasil <span class="muted" style="font-weight:normal">· GitHub Pages (online)</span></h1>
+</header>
 
-            <tr>
-                <td>Computação de Alto Desempenho</td>
-                <td>Campinas - SP</td>
-                <td>UNICAMP</td>
-                <td>Edson Borin</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Computação de Alto Desempenho</td>
-                <td>Vitória - ES</td>
-                <td>UFES</td>
-                <td>Claudine Santos Baduê</td>
-                <td>--</td>
-            </tr>           
-            <tr>
-                <td>Laboratório de Bioinformática e Computação de Alto Desempenho (LaBioCAD)</td>
-                <td>Belém - PA</td>
-                <td>UFPA</td>
-                <td>Regiane Silva Kawasaki Francês</td>
-                <td>--</td>
-            </tr>
-             
-            <tr>
-                <td>Rede Co.C.A.D.A. - Rede de Colaboração em Computação de Alto Desempenho e Aplicações</td>
-                <td>Ilhéus - BA</td>
-                <td>UESC</td>
-                <td>Francisco Bruno Souza Oliveira</td>
-                <td>--</td>
-            </tr>
-        </table>
-    </section>
+<div class="container">
+  <aside>
+    <h2>Dados</h2>
+    <input type="file" id="fileInput" accept=".csv" class="btn">
+    <div class="drop" id="drop">ou arraste e solte seu CSV aqui</div>
 
- <section>
-        <h2>IA Research Groups</h2>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Institution</th>
-                <th>Coordinator</th>
-                <th>Website</th>
-            </tr>
-            <tr>
-                <td>Grupo de Inteligência Artificial</td>
-                <td>Brasilia - DF</td>
-                <td>UnB</td>
-                <td>Luís Palo Faina Garcia</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Grupo de Pesquisa em Sistemas Mecatrônicos e Inteligencia Artificial (SIMIA)</td>
-                <td>Aracaju - SE</td>
-                <td>IFS</td>
-                <td>Ricardo Ariel Correa Rabelo</td>
-                <td>--</td>
-            </tr>
-            
-            <tr>
-                <td>Grupo de Estudos em Engenharia do Conhecimento e Inteligência Artificial (GrECIA)</td>
-                <td>Rio do Sul - SC</td>
-                <td>IF-Catarinense</td>
-                <td>Juliano Tonizetti Brignoli</td>
-                <td>--</td>
-            </tr>
+    <label for="csvUrl">URL do CSV (mesmo repositório ou qualquer URL com CORS liberado)</label>
+    <input type="url" id="csvUrl" placeholder="ex.: dados.csv ou https://seuusuario.github.io/seurepo/dados.csv" />
+    <div class="controls">
+      <button class="btn" id="loadUrlBtn">Carregar URL</button>
+      <button class="btn" id="configColsBtn">Configurar colunas</button>
+      <button class="btn" id="resetColsBtn" title="Apagar mapeamento salvo">Redefinir mapeamento</button>
+    </div>
+    <div class="small">O CSV deve ter a <b>primeira linha como cabeçalho</b> (título das colunas). Dica: use <code>?csv=URL</code> na barra do navegador para auto-carregar.</div>
 
-            <tr>
-                <td>Grupo de Inteligência Artificial (AI)</td>
-                <td>Porto Alegre - RS</td>
-                <td>PUCRS</td>
-                <td>Felipe Rech Meneguzzi</td>
-                <td>--</td>
-            </tr>
+    <h2>Filtros</h2>
+    <label for="estadoSel">Estado</label><select id="estadoSel"><option value="">Todos</option></select>
+    <label for="tipoInstSel">Tipo de instituição</label><select id="tipoInstSel"><option value="">Todos</option></select>
+    <label for="usaIASel">Usa IA?</label><select id="usaIASel"><option value="">Todos</option><option>Sim</option><option>Não</option></select>
+    <label for="temClusterSel">Possui cluster &gt; 50 TF?</label><select id="temClusterSel"><option value="">Todos</option><option>Sim</option><option>Não</option></select>
+    <label for="buscaTxt">Busca (nome, instituição, cidade, linhas)</label><input type="text" id="buscaTxt" placeholder="Ex.: fluidodinâmica, UFRGS, CUDA..." />
 
-            <tr>
-                <td>Inteligência Artificial Aplicada à Saúde Materno-Infantil (IASMIN)</td>
-                <td>Natal - RN</td>
-                <td>UFRN</td>
-                <td>Marcelo Augusto Costa Fernandes</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>Lógica e Inteligência Artificial (LogIA)</td>
-                <td>Fortaleza - CE</td>
-                <td>UFC</td>
-                <td>João Paulo Pordeus Gomes</td>
-                <td>--</td>
-            </tr>
-        </table>
-    </section>
+    <div class="controls">
+      <button class="btn" id="limparBtn">Limpar</button>
+      <button class="btn" id="buscarBtn">Buscar (marcadores)</button>
+      <button class="btn" id="selecionarMapaBtn" title="Filtrar para o que está visível no mapa">Selecionar no mapa</button>
+      <button class="btn" id="limparSelecaoBtn" style="display:none">Limpar seleção</button>
+      <span class="status" id="statusMsg"></span>
+    </div>
 
+    <div style="margin-top:12px">
+      <span class="pill" id="countPill">0 grupos</span>
+      <span class="pill" id="statePill">Brasil</span>
+    </div>
 
-    
-    <section>
-        <h2>Researchers in HPC</h2>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Institution</th>
-                <th>Location</th>
-                <th>CNPq Lattes</th>
-            </tr>
-            <!--<tr><td>Abel Silva-Filho</td><td>UFPE</td><td>Recife, PE</td><td><a href="#" target="_blank">Lattes</a></td></tr> -->
-            <tr><td>Adenauer Yamin</td><td>UFPel</td><td>Pelotas, RS</td><td><a href="http://lattes.cnpq.br/8861113953470000" target="_blank">Lattes</a></td></tr>
-            <tr><td>Alexandre Sena</td><td>IME/UERJ</td><td>Rio de Janeiro, RJ</td><td><a href="http://lattes.cnpq.br/1836363748488436" target="_blank">Lattes</a></td></tr>
-            <tr><td>Alexandro Baldassin</td><td>IGCE/UNESP</td><td>Rio Claro, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Alfredo Goldman</td><td>IME/USP</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Aline de Paula Nascimento</td><td>IC/UFF</td><td>Niterói, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Allberson Dantas</td><td>UNILAB</td><td>Redenção, CE</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Alvaro Coutinho</td><td>COPPE/UFRJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Álvaro Fazenda</td><td>ICT/Unifesp</td><td>São José dos Campos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Anderson Faustino</td><td>UEM</td><td>Maringá, PR</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Antonio Tadeu Gomes</td><td>LNCC</td><td>Petrópolis, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Arthur Francisco Lorenzon</td><td>UFRGS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Calebe Bianchini</td><td>Mackenzie</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Carla Osthoff</td><td>LNCC</td><td>Petrópolis, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Carlos Augusto Martins</td><td>PUC Minas</td><td>Belo Horizonte, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Cesar De Rose</td><td>PUCRS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Claudio Amorim</td><td>UFRJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Cláudio Geyer</td><td>UFRGS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Claudio Schepke</td><td>UNIPAMPA</td><td>Alegrete, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Cristiana Bentes</td><td>UERJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Cristiano Costa</td><td>Unisinos</td><td>São Leopoldo, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Cristina Boeres</td><td>UFF</td><td>Niterói, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Dalvan Griebler</td><td>PUCRS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Daniel Cordeiro</td><td>USP</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Daniel de Oliveira</td><td>UFF</td><td>Niterói, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Denise Stringhini</td><td>Unifesp</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Diego Brandão</td><td>Cefet/RJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Diego Leonel Cadette Dutra</td><td>UFRJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Douglas Macedo</td><td>UFSC</td><td>Florianópolis, SC</td><td><a href="#" target="_blank">Lattes</a></td></tr> 
-            <tr><td>Edson Cáceres</td><td>UFMS</td><td>Campo Grande, MS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Edward Moreno</td><td>UFS</td><td>São Cristóvão, SE</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Emilio Francesquini</td><td>UFABC</td><td>Santo André, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Francisco Carvalho-Junior</td><td>UFC</td><td>Fortaleza, CE</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Gabriel P. Silva</td><td>UFRJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>George Teodoro</td><td>UFMG</td><td>Belo Horizonte, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Gerson Geraldo H. Cavalheiro</td><td>UFPel</td><td>Pelotas, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Guilherme Koslovski</td><td>UDESC</td><td>Joinville, SC</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Henrique Cota de Freitas</td><td>PUC Minas</td><td>Belo Horizonte, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Hermes Senger</td><td>UFSCar</td><td>São Carlos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Herve Yviquel</td><td>UNICAMP</td><td>Campinas, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>João Vicente Ferreira Lima</td><td>UFSM</td><td>Santa Maria, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>José Augusto Nacif</td><td>UFV</td><td>Viçosa, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Joubert Lima</td><td>UFOP</td><td>Ouro Preto, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Juan Salamanca</td><td>UNICAMP</td><td>Campinas, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Kalinka Castelo Branco</td><td>ICMC/USP</td><td>São Carlos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Lucas Mello Schnorr</td><td>UFRGS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Lucas Wanner</td><td>UNICAMP</td><td>Campinas, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Lucia Drummond</td><td>UFF</td><td>Niterói, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Luiz Gustavo Fernandes</td><td>PUCRS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Marco Netto</td><td>Microsoft</td><td>Brasil</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Marco Antonio Zanata Alves</td><td>UFPR</td><td>Curitiba, PR</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Maria Clicia Castro</td><td>UERJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Mario Dantas</td><td>UFJF</td><td>Juiz de Fora, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Márcio Castro</td><td>UFSC</td><td>Florianópolis, SC</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Monica Pereira</td><td>UFRN</td><td>Natal, RN</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Paulo Lopes de Souza</td><td>ICMC/USP</td><td>São Carlos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Paulo Matias</td><td>UFSCar</td><td>São Carlos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Philippe Olivier Alexandre Navaux</td><td>UFRGS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Raphael Camargo</td><td>UFABC</td><td>Santo André, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Ricardo Ferreira</td><td>UFV</td><td>Viçosa, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Ricardo Menotti</td><td>UFSCar</td><td>São Carlos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Ricardo Santos</td><td>UFMS</td><td>Campo Grande, MS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Roberto Pinto Souto</td><td>LNCC</td><td>Petrópolis, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Rodrigo Righi</td><td>Unisinos</td><td>São Leopoldo, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Rogério Gonçalves</td><td>UTFPR</td><td>Curitiba, PR</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Roger Immich</td><td>UFRN</td><td>Natal, RN</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Rosiane de Freitas Rodrigues</td><td>UFAM</td><td>Manaus, AM</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Samuel Xavier de Souza</td><td>UFRN</td><td>Natal, RN</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Sanderson Gonzaga de Oliveira</td><td>Unifesp</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Sarita Bruschi</td><td>ICMC/USP</td><td>São Carlos, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Siang Song</td><td>USP</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Tiago Alves</td><td>UERJ</td><td>Rio de Janeiro, RJ</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Tiago Ferreto</td><td>PUCRS</td><td>Porto Alegre, RS</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Vanderlei Bonato</td><td>USP</td><td>São Paulo, SP</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Vitor Souza</td><td>UFV</td><td>Viçosa, MG</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Wanderson Roger Azevedo Dias</td><td>IFRO</td><td>Rondônia, RO</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-            <tr><td>Wellington Martins</td><td>UFG</td><td>Goiânia, GO</td><td><a href="#" target="_blank">Lattes</a></td></tr>
-        </table>
-    </section>
+    <div class="results" id="liveResults"><div class="muted">Carregue o CSV para visualizar os resultados.</div></div>
+  </aside>
 
+  <main>
+    <div id="leaf"></div>
+    <div class="legend">
+      <span><span class="lg-dot" style="background:#f59e0b"></span> IA &amp; Cluster &gt; 50 TF</span>
+      <span><span class="lg-dot" style="background:#10b981"></span> IA (sem cluster &gt; 50 TF)</span>
+      <span><span class="lg-dot" style="background:#fb923c"></span> Cluster &gt; 50 TF (sem IA)</span>
+      <span><span class="lg-dot" style="background:#94a3b8"></span> Outros</span>
+    </div>
 
-    
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+    <div class="panel">
+      <div class="row">
+        <div class="card"><h3>Resumo</h3><div class="muted" id="resumoCounts">—</div><div class="chips" id="resumoChips"></div></div>
+        <div class="card"><h3>Grupos por Estado</h3><div class="muted" id="topEstados">—</div></div>
+        <div class="card"><h3>Uso de IA &amp; Tipo</h3><div class="muted" id="distIAETipo">—</div></div>
+      </div>
+
+      <div style="margin-top:10px">
+        <table id="tabela"><thead><tr id="theadRow"></tr></thead><tbody id="tbody"></tbody></table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal para configurar colunas -->
+<div class="modal" id="modalCols">
+  <div class="box">
+    <h3 style="margin:0 0 8px">Mapeamento de colunas</h3>
+    <div class="small" style="margin-bottom:10px">Selecione em qual coluna do CSV está cada informação. <b>Obrigatório</b>: Estado e Nome do Grupo.</div>
+    <div class="grid2">
+      <div><label>Estado <span class="req">*</span></label><select id="col_estado"></select></div>
+      <div><label>Cidade</label><select id="col_cidade"></select></div>
+      <div><label>Nome do Grupo <span class="req">*</span></label><select id="col_nomeGrupo"></select></div>
+      <div><label>Instituição</label><select id="col_instituicao"></select></div>
+      <div><label>Tipo de instituição</label><select id="col_tipoInst"></select></div>
+      <div><label>Usa IA?</label><select id="col_usaIA"></select></div>
+      <div><label>Linhas de pesquisa</label><select id="col_linhas"></select></div>
+      <div><label>Setor</label><select id="col_setor"></select></div>
+      <div><label>Site</label><select id="col_site"></select></div>
+      <div><label>E-mail</label><select id="col_email"></select></div>
+      <div><label>Cluster &gt; 50 TF?</label><select id="col_temCluster50"></select></div>
+    </div>
+    <div class="controls" style="margin-top:12px">
+      <button class="btn" id="autoMapBtn">Preencher automaticamente</button>
+      <div style="flex:1"></div>
+      <button class="btn" id="cancelColsBtn">Cancelar</button>
+      <button class="btn" id="saveColsBtn">Salvar mapeamento</button>
+    </div>
+  </div>
+</div>
+
+<footer style="padding:12px 14px;color:var(--muted)">
+  Hospede este arquivo no GitHub Pages. Para auto-carregar um CSV por URL, use <code>?csv=URL</code>.<br/>
+  Ex.: <code>https://seuusuario.github.io/seurepo/index.html?csv=dados.csv</code>
+</footer>
+
+<script>
+/* ===== LEAFLET MAP ===== */
+const map = L.map('leaf', { zoomControl: true, minZoom: 3, maxZoom: 18 });
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+});
+osm.addTo(map);
+// Brasil ~ centro
+map.setView([-14.235, -51.925], 4);
+
+// camada de marcadores
+const markersLayer = L.layerGroup().addTo(map);
+
+/* ===== GEO APOIO (capitais + fallback) ===== */
+const UF_INFO={"AC":{"cap":"Rio Branco","lat":-9.975,"lon":-67.823},"AL":{"cap":"Maceió","lat":-9.649,"lon":-35.708},"AP":{"cap":"Macapá","lat":0.035,"lon":-51.07},"AM":{"cap":"Manaus","lat":-3.118,"lon":-60.021},"BA":{"cap":"Salvador","lat":-12.972,"lon":-38.501},"CE":{"cap":"Fortaleza","lat":-3.731,"lon":-38.51},"DF":{"cap":"Brasília","lat":-15.793,"lon":-47.882},"ES":{"cap":"Vitória","lat":-20.315,"lon":-40.312},"GO":{"cap":"Goiânia","lat":-16.68,"lon":-49.256},"MA":{"cap":"São Luís","lat":-2.53,"lon":-44.306},"MT":{"cap":"Cuiabá","lat":-15.601,"lon":-56.097},"MS":{"cap":"Campo Grande","lat":-20.469,"lon":-54.62},"MG":{"cap":"Belo Horizonte","lat":-19.916,"lon":-43.934},"PA":{"cap":"Belém","lat":-1.456,"lon":-48.501},"PB":{"cap":"João Pessoa","lat":-7.119,"lon":-34.845},"PR":{"cap":"Curitiba","lat":-25.428,"lon":-49.273},"PE":{"cap":"Recife","lat":-8.054,"lon":-34.881},"PI":{"cap":"Teresina","lat":-5.092,"lon":-42.803},"RJ":{"cap":"Rio de Janeiro","lat":-22.906,"lon":-43.172},"RN":{"cap":"Natal","lat":-5.795,"lon":-35.209},"RS":{"cap":"Porto Alegre","lat":-30.034,"lon":-51.217},"RO":{"cap":"Porto Velho","lat":-8.761,"lon":-63.903},"RR":{"cap":"Boa Vista","lat":2.823,"lon":-60.675},"SC":{"cap":"Florianópolis","lat":-27.595,"lon":-48.549},"SP":{"cap":"São Paulo","lat":-23.55,"lon":-46.633},"SE":{"cap":"Aracaju","lat":-10.947,"lon":-37.073},"TO":{"cap":"Palmas","lat":-10.184,"lon":-48.333}};
+const UF_BY_NAME={"Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goías":"GO","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO"};
+function ufToAcronym(e){if(!e)return null; if(e.length===2&&e.toUpperCase()===e)return e; return UF_BY_NAME[String(e).trim()]||e;}
+function hashCode(s){let h=0;s=String(s||"");for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h);}
+function cityLatLng(city,uf){
+  const info=UF_INFO[uf]; if(!info) return null;
+  if(!city||String(city).trim()==="") return [info.lat,info.lon];
+  const cap = String(city).trim().toLowerCase()===info.cap.toLowerCase();
+  if(cap) return [info.lat,info.lon];
+  const h=hashCode(city+"|"+uf), a=(h%360)*(Math.PI/180), r=0.5+(h%400)/1000;
+  return [info.lat + r*Math.sin(a), info.lon + r*Math.cos(a)];
+}
+
+/* ===== ESTADO DA APLICAÇÃO ===== */
+let rawData=[], headers=[], filtered=[], selectionActive=false, selectionFiltered=[], columnsMap={}, leafletMarkers=[];
+const REQUIRED_KEYS = ['estado', 'nomeGrupo'];
+const selectIds=['estado','cidade','nomeGrupo','instituicao','tipoInst','usaIA','linhas','setor','site','email','temCluster50'];
+const tableCols=['Grupo','Instituição','Tipo','Estado','Cidade','Usa IA?','Linhas de pesquisa','Setor','Site','E-mail'];
+let sortState={idx:0,asc:true};
+
+/* ===== PARSE CSV (PapaParse) ===== */
+function parseCSVText(text){
+  const result = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: 'greedy',
+    dynamicTyping: false
+  });
+  if (result.errors && result.errors.length){
+    console.warn('PapaParse errors:', result.errors);
+  }
+  return { headers: result.meta.fields || [], rows: result.data || [] };
+}
+
+/* ===== MAPEAR COLUNAS (guess + modal) ===== */
+function guessColumns(cols){
+  const find = (patterns)=> cols.find(c => patterns.some(p => new RegExp(p,'i').test(c))) || '';
+  return {
+    estado: find(['^Estado(\\.|$)','^UF$','\\bUF\\b']),
+    cidade: find(['^Cidade(\\.|$)']),
+    nomeGrupo: find(['^Nome do Grupo','^Grupo$','^Nome$','Nome\\s*do\\s*Grupo']),
+    instituicao: find(['Institui.+vinculado','Institui.+grupo','^Institui']),
+    tipoInst: find(['^Tipo de institui','^Tipo$']),
+    usaIA: find(['utiliza Intelig.ncia Artificial','^O grupo utiliza Intelig','^Usa IA','\\bIA\\b']),
+    linhas: find(['Linha.s de pesquisa','Linhas de pesquisa','^Linhas?$','Linhas/Áreas','Áreas']),
+    site: find(['Link do site oficial','^Site','Website','URL']),
+    email: find(['E-mail de contato','Email','^E-?mail']),
+    setor: find(['^Setor econ','^Setor$']),
+    temCluster50: find(['cluster.*50\\s*TFlops','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF'])
+  };
+}
+function optListFromHeaders(headers, includeNone){
+  const opts = includeNone? ['(não usar)'].concat(headers) : headers.slice();
+  return opts.map(h=>`<option value="${h}">${h}</option>`).join('');
+}
+const modal=document.getElementById('modalCols');
+function openColsModal(){
+  if(!headers.length){ alert('Carregue um CSV primeiro.'); return; }
+  modal.style.display='flex';
+  const includeNone = true;
+  selectIds.forEach(id=>{
+    const sel=document.getElementById('col_'+id);
+    sel.innerHTML = optListFromHeaders(headers, includeNone);
+  });
+  const saved = JSON.parse(localStorage.getItem('obs_hpcia_mapping')||'{}');
+  const guess = guessColumns(headers);
+  const current = Object.assign({}, guess, saved);
+  selectIds.forEach(id=>{
+    const sel=document.getElementById('col_'+id);
+    const val=current[id] && headers.includes(current[id]) ? current[id] : (guess[id] || '(não usar)');
+    sel.value = val || '(não usar)';
+  });
+}
+function closeColsModal(){ modal.style.display='none'; }
+function getMappingFromUI(){
+  const m={}; selectIds.forEach(id=>{ const v=document.getElementById('col_'+id).value; if(v && v!=='(não usar)') m[id]=v; });
+  return m;
+}
+function validateMapping(m){ for(const k of REQUIRED_KEYS){ if(!m[k]) return false; } return true; }
+document.getElementById('configColsBtn').onclick=openColsModal;
+document.getElementById('cancelColsBtn').onclick=closeColsModal;
+document.getElementById('autoMapBtn').onclick=()=>{ const g=guessColumns(headers); selectIds.forEach(id=>{ document.getElementById('col_'+id).value = g[id] || '(não usar)'; }); };
+document.getElementById('saveColsBtn').onclick=()=>{
+  const m=getMappingFromUI();
+  if(!validateMapping(m)){ alert('Preencha pelo menos Estado e Nome do Grupo.'); return; }
+  columnsMap = m; localStorage.setItem('obs_hpcia_mapping', JSON.stringify(m));
+  fillSelectOptions(); applyFilters(); drawMarkers(getActiveView()); fitToMarkers(); closeColsModal();
+};
+document.getElementById('resetColsBtn').onclick=()=>{ localStorage.removeItem('obs_hpcia_mapping'); alert('Mapeamento apagado.'); };
+
+/* ===== UI: filtros/contagem/tabela ===== */
+(function buildHead(){const tr=document.getElementById('theadRow'); tableCols.forEach((n,i)=>{const th=document.createElement('th');th.textContent=n;th.onclick=()=>{sortState={idx:i,asc:(sortState.idx===i?!sortState.asc:true)};renderTable(getActiveView());};tr.appendChild(th);});})();
+function uniq(a){return Array.from(new Set(a.filter(x=>x!=null&&String(x).trim()!=='')));}
+
+function fillSelectOptions(){
+  const eSel=document.getElementById('estadoSel'), tSel=document.getElementById('tipoInstSel');
+  eSel.innerHTML='<option value=\"\">Todos</option>'; tSel.innerHTML='<option value=\"\">Todos</option>';
+  uniq(rawData.map(r=>r[columnsMap.estado]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(e=>{const o=document.createElement('option');o.textContent=e;o.value=e;eSel.appendChild(o);});
+  if(columnsMap.tipoInst){
+    uniq(rawData.map(r=>r[columnsMap.tipoInst]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(t=>{const o=document.createElement('option');o.textContent=t;o.value=t;tSel.appendChild(o);});
+  }
+}
+
+function applyFilters(){
+  if(!columnsMap.estado || !columnsMap.nomeGrupo) return;
+  const estado=estadoSel.value, tipo=tipoInstSel.value, usaIA=usaIASel.value, temCluster=temClusterSel.value, busca=buscaTxt.value.trim().toLowerCase();
+  filtered = rawData.filter(r=>{
+    const byE=!estado || String(r[columnsMap.estado]||'').trim()===estado;
+    const byT=!tipo || String(r[columnsMap.tipoInst]||'').trim()===tipo;
+    const byIA=!usaIA || String(r[columnsMap.usaIA]||'').toLowerCase().includes(usaIA.toLowerCase());
+    let byC=true; if(temCluster){ const v=(r[columnsMap.temCluster50]||'').toString().toLowerCase(); if(temCluster==='Sim')byC=v.includes('sim'); if(temCluster==='Não')byC=v.includes('não')||v.includes('nao'); }
+    const blob=[columnsMap.nomeGrupo,columnsMap.instituicao,columnsMap.cidade,columnsMap.linhas,columnsMap.setor].map(k=>(r[k]||'').toString().toLowerCase()).join(' ');
+    return byE&&byT&&byIA&&byC&&(!busca||blob.includes(busca));
+  });
+  if(selectionActive){ selectionFiltered = filtered.filter(r=>isRowInViewport(r)); }
+  renderAll();
+}
+function getActiveView(){return selectionActive?selectionFiltered:filtered;}
+function renderAll(){
+  const v=getActiveView();
+  renderLiveResults(v); renderResumo(v); renderTable(v);
+  countPill.textContent=`${v.length} ${v.length===1?'grupo':'grupos'}`;
+  statePill.textContent=estadoSel.value||'Brasil';
+  statusMsg.textContent='';
+}
+
+function renderLiveResults(v){
+  const box=liveResults;
+  if(!v.length){ box.innerHTML='<div class="muted">Sem resultados para os filtros atuais.</div>'; return; }
+  box.innerHTML=v.slice(0,150).map(r=>{
+    const nome=r[columnsMap.nomeGrupo]||'—',inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',est=r[columnsMap.estado]||'—',cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
+    const site=columnsMap.site?(r[columnsMap.site]||''):'', link=site?` <a href="${String(site).startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:'';
+    return `<div class="result-item"><div><b>${nome}</b></div><div class="muted">${inst} · ${cid} / ${est} · IA: ${ia}${link}</div></div>`;
+  }).join('') + (v.length>150?`<div class="muted" style="margin-top:6px">… e mais ${v.length-150} resultados</div>`:'');
+}
+function renderResumo(v){
+  const est=new Set(), cid=new Set(), inst=new Set();
+  v.forEach(r=>{ if(r[columnsMap.estado])est.add(r[columnsMap.estado]); if(columnsMap.cidade && r[columnsMap.cidade])cid.add(r[columnsMap.cidade]); if(columnsMap.instituicao && r[columnsMap.instituicao])inst.add(r[columnsMap.instituicao]); });
+  resumoCounts.innerHTML=`Estados: <b>${est.size}</b> · Cidades: <b>${cid.size}</b> · Instituições: <b>${inst.size}</b>`;
+  const counts={}; v.forEach(r=>{ const e=r[columnsMap.estado]||'—'; counts[e]=(counts[e]||0)+1; });
+  const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5); topEstados.innerHTML=top.length?top.map(([e,c])=>`<div>${e}: <b>${c}</b></div>`).join(''):'—';
+  const ia={'Sim':0,'Não':0}, tipos={};
+  v.forEach(r=>{
+    if(columnsMap.usaIA){ const t=(r[columnsMap.usaIA]||'').toString().toLowerCase(); if(t.includes('sim'))ia['Sim']++; else if(t.includes('não')||t.includes('nao'))ia['Não']++; }
+    const tp=columnsMap.tipoInst?(r[columnsMap.tipoInst]||'—'):'—'; tipos[tp]=(tipos[tp]||0)+1;
+  });
+  const tiposHtml=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([t,c])=>`${t||'—'}: <b>${c}</b>`).join(' · ');
+  distIAETipo.innerHTML=`IA — Sim: <b>${ia['Sim']}</b> · Não: <b>${ia['Não']}</b><br>${tiposHtml}`;
+}
+function renderTable(v){
+  const tbody=document.getElementById('tbody');
+  const rows=v.map(r=>[
+    r[columnsMap.nomeGrupo]||'—',
+    columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',
+    columnsMap.tipoInst?(r[columnsMap.tipoInst]||'—'):'—',
+    r[columnsMap.estado]||'—',
+    columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',
+    columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—',
+    columnsMap.linhas?(r[columnsMap.linhas]||'—'):'—',
+    columnsMap.setor?(r[columnsMap.setor]||'—'):'—',
+    columnsMap.site?(r[columnsMap.site]||'—'):'—',
+    columnsMap.email?(r[columnsMap.email]||'—'):'—',
+  ]);
+  rows.sort((a,b)=>{const A=(a[sortState.idx]||'').toString().toLowerCase(),B=(b[sortState.idx]||'').toString().toLowerCase();return A<B?(sortState.asc?-1:1):A>B?(sortState.asc?1:-1):0;});
+  tbody.innerHTML=rows.map(cols=>`<tr>${cols.map((c,i)=> i===8 && c && c!=='—' ? `<td><a href="${String(c).startsWith('http')?c:'http://'+c}" target="_blank" rel="noopener">abrir</a></td>`:`<td>${c||''}</td>`).join('')}</tr>`).join('');
+}
+
+/* ===== MARCADORES (Leaflet) ===== */
+function mkStyle(ia,cl){
+  const i = columnsMap.usaIA && String(ia||'').toLowerCase().includes('sim');
+  const c = columnsMap.temCluster50 && String(cl||'').toLowerCase().includes('sim');
+  let color = '#94a3b8'; // slate
+  if(i && c) color = '#f59e0b';
+  else if(i && !c) color = '#10b981';
+  else if(!i && c) color = '#fb923c';
+  return { radius: 7, color:'#0b0f14', weight:2, fillColor:color, fillOpacity:0.95 };
+}
+function drawMarkers(v){
+  markersLayer.clearLayers(); leafletMarkers = [];
+  v.forEach(r=>{
+    const uf = ufToAcronym(r[columnsMap.estado]||"");
+    const ll = cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+    if(!ll) return;
+    const style = mkStyle(columnsMap.usaIA? r[columnsMap.usaIA] : '', columnsMap.temCluster50? r[columnsMap.temCluster50] : '');
+    const nome=r[columnsMap.nomeGrupo]||'—', inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—', est=r[columnsMap.estado]||'—', cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—', ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
+    const site=columnsMap.site?(r[columnsMap.site]||''):'';
+    const html = `<b>${nome}</b><br>${inst}<br>${cid} / ${est}<br>IA: ${ia}${site?`<br><a href="${site.startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:''}`;
+    const m = L.circleMarker(ll, style).bindPopup(html, { maxWidth: 260 });
+    m.addTo(markersLayer);
+    leafletMarkers.push(m);
+  });
+}
+function fitToMarkers(){
+  if(!leafletMarkers.length) return;
+  const group = L.featureGroup(leafletMarkers);
+  map.fitBounds(group.getBounds().pad(0.15), { animate:true });
+}
+function isRowInViewport(r){
+  const uf = ufToAcronym(r[columnsMap.estado]||"");
+  const ll = cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+  if(!ll) return false;
+  return map.getBounds().contains(ll);
+}
+
+/* ===== EVENTS ===== */
+estadoSel.onchange=tipoInstSel.onchange=usaIASel.onchange=temClusterSel.onchange=applyFilters;
+buscaTxt.oninput=applyFilters;
+document.getElementById('limparBtn').onclick=()=>{estadoSel.value='';tipoInstSel.value='';usaIASel.value='';temClusterSel.value='';buscaTxt.value='';selectionActive=false;selectionFiltered=[];document.getElementById('limparSelecaoBtn').style.display='none';statusMsg.textContent='';applyFilters();};
+document.getElementById('buscarBtn').onclick=()=>{drawMarkers(getActiveView());fitToMarkers();statusMsg.textContent=`Marcadores: ${leafletMarkers.length}`;};
+document.getElementById('selecionarMapaBtn').onclick=()=>{selectionFiltered=filtered.filter(isRowInViewport);selectionActive=true;document.getElementById('limparSelecaoBtn').style.display='';renderAll();drawMarkers(getActiveView());fitToMarkers();statusMsg.textContent=`Selecionados no mapa: ${selectionFiltered.length}`;};
+document.getElementById('limparSelecaoBtn').onclick=()=>{selectionActive=false;selectionFiltered=[];document.getElementById('limparSelecaoBtn').style.display='none';renderAll();drawMarkers(getActiveView());statusMsg.textContent='';};
+map.on('moveend',()=>{ if(selectionActive){ selectionFiltered=filtered.filter(isRowInViewport); renderAll(); drawMarkers(getActiveView()); }});
+
+/* ===== CARREGAR CSV (arquivo local / drag&drop / URL / ?csv=) ===== */
+const fileInput=document.getElementById('fileInput'), drop=document.getElementById('drop');
+fileInput.addEventListener('change',e=>{const f=e.target.files[0]; if(f){ const reader=new FileReader(); reader.onload=()=>bootWithCSV(reader.result); reader.readAsText(f); }});
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor='#4b5563';}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor='#334155';}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f){ const reader=new FileReader(); reader.onload=()=>bootWithCSV(reader.result); reader.readAsText(f); }});
+
+document.getElementById('loadUrlBtn').onclick=()=>{
+  const url = document.getElementById('csvUrl').value.trim();
+  if(!url){ alert('Informe a URL do CSV.'); return; }
+  fetch(url,{cache:'no-store'})
+    .then(r=>{ if(!r.ok) throw new Error('Falha ao baixar CSV'); return r.text(); })
+    .then(text=>bootWithCSV(text))
+    .catch(err=>{ console.error(err); alert('Não foi possível carregar o CSV desta URL (CORS/URL inválida?).'); });
+};
+
+// auto-load via ?csv=
+(function(){
+  const urlParam = new URLSearchParams(location.search).get('csv');
+  if(urlParam){
+    document.getElementById('csvUrl').value = urlParam;
+    document.getElementById('loadUrlBtn').click();
+  }
+})();
+
+/* ===== BOOT ===== */
+function bootWithCSV(text){
+  const parsed = parseCSVText(text);
+  headers = parsed.headers;
+  rawData = parsed.rows;
+  if(!rawData.length){ alert('CSV vazio ou inválido.'); return; }
+
+  const saved = JSON.parse(localStorage.getItem('obs_hpcia_mapping')||'{}');
+  const guess = guessColumns(headers);
+  columnsMap = Object.assign({}, guess, saved);
+
+  if(!columnsMap.estado || !columnsMap.nomeGrupo){
+    openColsModal();
+  }else{
+    fillSelectOptions(); applyFilters(); drawMarkers(getActiveView()); fitToMarkers();
+    document.getElementById('liveResults').scrollTop=0; statusMsg.textContent='CSV carregado.';
+  }
+}
+</script>
 </body>
 </html>
