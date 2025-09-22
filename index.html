@@ -1,64 +1,42 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Observatório HPC & IA — Brasil (GitHub Pages, online • Lat/Lon do CSV)</title>
-
-<!-- Leaflet (mapa online) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-<!-- PapaParse (CSV online) -->
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
+<title>Observatório HPC & IA — Brasil (100% offline)</title>
 <style>
-  :root{--bg:#0b0f14;--panel:#111826;--muted:#94a3b8;--border:#1f2937;--text:#e5e7eb;--green:#10b981;--gold:#f59e0b;--orange:#fb923c;--slate:#94a3b8}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;background:var(--bg);color:var(--text)}
-  header{padding:16px 20px;border-bottom:1px solid var(--border);background:#0d1320;position:sticky;top:0;z-index:30}
-  header h1{margin:0;font-size:18px}
-  .container{display:grid;grid-template-columns:440px 1fr;gap:14px;padding:14px}
+  :root{--bg:#0b0f14;--panel:#111826;--muted:#94a3b8;--border:#1f2937;--text:#e5e7eb;--green:#10b981;--gold:#f59e0b;--orange:#fb923c;--slate:#94a3b8;--accent:#38bdf8}
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;background:var(--bg);color:var(--text)}
+  header{padding:16px 20px;border-bottom:1px solid var(--border);background:#0d1320;position:sticky;top:0;z-index:30} header h1{margin:0;font-size:18px}
+  .container{display:grid;grid-template-columns:400px 1fr;gap:14px;padding:14px}
   aside{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px}
-  aside h2{margin:6px 0 8px;font-size:16px}
-  aside label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-  aside select, aside input[type=text], aside input[type=url]{width:100%;padding:8px 10px;border-radius:12px;background:#0b1220;border:1px solid var(--border);color:var(--text)}
+  aside h2{margin:6px 0 8px;font-size:16px} aside label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+  aside select,aside input[type=text]{width:100%;padding:8px 10px;border-radius:12px;background:#0b1220;border:1px solid var(--border);color:var(--text)}
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--border);font-size:12px;margin:2px 4px 0 0}
-  .btn{display:inline-block;padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#0b1220;color:var(--text);text-decoration:none;cursor:pointer}
-  .btn:hover{border-color:#334155}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
-  .status{font-size:12px;color:var(--muted);margin-left:4px}
-  main{display:grid;grid-template-rows:min(62vh,640px) auto;gap:14px}
-  #leaf{width:100%;height:100%;border:1px solid var(--border);border-radius:16px;overflow:hidden}
-  .legend{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
-  .lg-dot{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #0b0f14}
+  .btn{display:inline-block;padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:#0b1220;color:var(--text);text-decoration:none;cursor:pointer} .btn:hover{border-color:#334155}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center} .status{font-size:12px;color:var(--muted);margin-left:4px}
+  main{display:grid;grid-template-rows:540px auto;gap:14px}
+  #map{position:relative;width:100%;height:100%;border:1px solid var(--border);border-radius:16px;background:#0e1320;overflow:hidden;touch-action:none}
+  #map .grid{position:absolute;inset:0;background-image:linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);background-size:80px 80px}
+  #world{position:absolute;left:50%;top:50%;transform-origin:0 0}
+  .marker{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;border:3px solid #0b0f14;box-shadow:0 0 0 2px rgba(0,0,0,.25);cursor:pointer}
+  .mk-gold{background:var(--gold);box-shadow:0 0 0 2px rgba(0,0,0,.25),0 0 0 5px rgba(255,255,255,.15)}
+  .mk-green{background:var(--green)} .mk-orange{background:var(--orange)} .mk-slate{background:var(--slate)}
+  .tooltip{position:absolute;background:#0b1220;border:1px solid var(--border);padding:8px 10px;border-radius:10px;font-size:12px;pointer-events:none;max-width:260px;z-index:20}
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:10px}
   .row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .card{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:10px}
-  .card h3{font-size:14px;margin:4px 0 6px}
+  .card{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:10px} .card h3{font-size:14px;margin:4px 0 6px}
   .muted{color:var(--muted);font-size:12px}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px;border-bottom:1px solid var(--border);font-size:13px}
-  th{user-select:none;cursor:pointer;text-align:left}
-  tr:hover td{background:#0b1220}
+  table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid var(--border);font-size:13px} th{user-select:none;cursor:pointer;text-align:left} tr:hover td{background:#0b1220}
   .results{margin-top:10px;background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:10px;max-height:340px;overflow:auto}
-  .result-item{border-bottom:1px dashed #1f2937;padding:6px 0}
-  .result-item:last-child{border-bottom:0}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
-  .chip{padding:2px 8px;border:1px solid var(--border);border-radius:10px;font-size:11px}
+  .result-item{border-bottom:1px dashed #1f2937;padding:6px 0}.result-item:last-child{border-bottom:0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.chip{padding:2px 8px;border:1px solid var(--border);border-radius:10px;font-size:11px}
   .drop{margin:10px 0;padding:10px;border:1px dashed #334155;border-radius:10px;font-size:12px;color:var(--muted);text-align:center}
-  /* Modal mapeamento */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
-  .modal .box{background:#0b1220;border:1px solid var(--border);border-radius:16px;padding:16px;max-width:900px;width:96%}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .req{color:#f43f5e;font-weight:600;margin-left:4px}
-  .small{font-size:12px;color:var(--muted)}
+  .zoomBtns{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:15} .zoomBtns .btn{padding:6px 10px}
 </style>
 </head>
 <body>
-<header>
-  <h1>Observatório HPC & IA — Brasil <span class="muted" style="font-weight:normal">· GitHub Pages (online • Lat/Lon do CSV)</span></h1>
-</header>
+<header><h1>Observatório HPC & IA — Brasil <span class="muted" style="font-weight:normal">· 100% offline (carregue seu CSV)</span></h1></header>
 
 <div class="container">
   <aside>
@@ -66,21 +44,12 @@
     <input type="file" id="fileInput" accept=".csv" class="btn">
     <div class="drop" id="drop">ou arraste e solte seu CSV aqui</div>
 
-    <label for="csvUrl">URL do CSV (mesmo repositório ou qualquer URL com CORS liberado)</label>
-    <input type="url" id="csvUrl" placeholder="ex.: dados.csv ou https://seuusuario.github.io/seurepo/dados.csv" />
-    <div class="controls">
-      <button class="btn" id="loadUrlBtn">Carregar URL</button>
-      <button class="btn" id="configColsBtn">Configurar colunas</button>
-      <button class="btn" id="resetColsBtn" title="Apagar mapeamento salvo">Redefinir mapeamento</button>
-    </div>
-    <div class="small">O CSV deve ter a <b>primeira linha como cabeçalho</b>. Mapeie <b>Latitude</b> e <b>Longitude</b> para posicionamento exato.</div>
-
     <h2>Filtros</h2>
     <label for="estadoSel">Estado</label><select id="estadoSel"><option value="">Todos</option></select>
     <label for="tipoInstSel">Tipo de instituição</label><select id="tipoInstSel"><option value="">Todos</option></select>
     <label for="usaIASel">Usa IA?</label><select id="usaIASel"><option value="">Todos</option><option>Sim</option><option>Não</option></select>
     <label for="temClusterSel">Possui cluster &gt; 50 TF?</label><select id="temClusterSel"><option value="">Todos</option><option>Sim</option><option>Não</option></select>
-    <label for="buscaTxt">Busca (nome, instituição, cidade, linhas)</label><input type="text" id="buscaTxt" placeholder="Ex.: fluidodinâmica, UFRGS, CUDA..." />
+    <label for="buscaTxt">Busca (nome, instituição, cidade, linhas)</label><input type="text" id="buscaTxt" placeholder="Ex.: fluidodinâmica, UFRGS, CUDA..."/>
 
     <div class="controls">
       <button class="btn" id="limparBtn">Limpar</button>
@@ -99,20 +68,23 @@
   </aside>
 
   <main>
-    <div id="leaf"></div>
-    <div class="legend">
-      <span><span class="lg-dot" style="background:#f59e0b"></span> IA &amp; Cluster &gt; 50 TF</span>
-      <span><span class="lg-dot" style="background:#10b981"></span> IA (sem cluster &gt; 50 TF)</span>
-      <span><span class="lg-dot" style="background:#fb923c"></span> Cluster &gt; 50 TF (sem IA)</span>
-      <span><span class="lg-dot" style="background:#94a3b8"></span> Outros</span>
+    <div id="map">
+      <div class="grid"></div>
+      <div id="world"></div>
+      <div class="zoomBtns">
+        <button class="btn" id="zoomIn">+</button>
+        <button class="btn" id="zoomOut">−</button>
+        <button class="btn" id="zoomFit">Fit</button>
+      </div>
     </div>
 
     <div class="panel">
       <div class="row">
-        <div class="card"><h3>Resumo</h3><div class="muted" id="resumoCounts">—</div></div>
+        <div class="card"><h3>Resumo</h3><div class="muted" id="resumoCounts">—</div><div class="chips" id="resumoChips"></div></div>
         <div class="card"><h3>Grupos por Estado</h3><div class="muted" id="topEstados">—</div></div>
         <div class="card"><h3>Uso de IA &amp; Tipo</h3><div class="muted" id="distIAETipo">—</div></div>
       </div>
+
       <div style="margin-top:10px">
         <table id="tabela"><thead><tr id="theadRow"></tr></thead><tbody id="tbody"></tbody></table>
       </div>
@@ -120,374 +92,195 @@
   </main>
 </div>
 
-<!-- Modal para configurar colunas -->
-<div class="modal" id="modalCols">
-  <div class="box">
-    <h3 style="margin:0 0 8px">Mapeamento de colunas</h3>
-    <div class="small" style="margin-bottom:10px">Selecione em qual coluna do CSV está cada informação. <b>Obrigatório</b>: Nome do Grupo e (Latitude+Longitude) <i>ou</i> Estado.</div>
-    <div class="grid2">
-      <div><label>Estado</label><select id="col_estado"></select></div>
-      <div><label>Cidade</label><select id="col_cidade"></select></div>
-      <div><label>Nome do Grupo <span class="req">*</span></label><select id="col_nomeGrupo"></select></div>
-      <div><label>Instituição</label><select id="col_instituicao"></select></div>
-      <div><label>Tipo de instituição</label><select id="col_tipoInst"></select></div>
-      <div><label>Usa IA?</label><select id="col_usaIA"></select></div>
-      <div><label>Linhas de pesquisa</label><select id="col_linhas"></select></div>
-      <div><label>Setor</label><select id="col_setor"></select></div>
-      <div><label>Site</label><select id="col_site"></select></div>
-      <div><label>E-mail</label><select id="col_email"></select></div>
-      <div><label>Cluster &gt; 50 TF?</label><select id="col_temCluster50"></select></div>
-      <div><label>Latitude</label><select id="col_lat"></select></div>
-      <div><label>Longitude</label><select id="col_lng"></select></div>
-    </div>
-    <div class="controls" style="margin-top:12px">
-      <button class="btn" id="autoMapBtn">Preencher automaticamente</button>
-      <div style="flex:1"></div>
-      <button class="btn" id="cancelColsBtn">Cancelar</button>
-      <button class="btn" id="saveColsBtn">Salvar mapeamento</button>
-    </div>
-  </div>
-</div>
-
-<footer style="padding:12px 14px;color:var(--muted)">
-  Publique no GitHub Pages. Para auto-carregar um CSV por URL, use <code>?csv=URL</code> (mesmo domínio evita CORS).
-</footer>
+<footer>Abra este arquivo no navegador, carregue seu CSV e navegue — sem internet e sem dependências externas.</footer>
 
 <script>
-/* ===== LEAFLET MAP ===== */
-const map = L.map('leaf', { zoomControl: true, minZoom: 3, maxZoom: 18 });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
-map.setView([-14.235, -51.925], 4);
-const markersLayer = L.layerGroup().addTo(map);
+/* ===== CSV PARSER (offline) — versão robusta ===== */
+function stripBOM(s){ return s && s.charCodeAt(0)===0xFEFF ? s.slice(1) : s; }
 
-/* ===== GEO APOIO ===== */
+function detectDelimiter(text){
+  // Analisa até ~8000 chars (5 linhas não vazias), conta vírgulas x pontos-e-vírgula
+  const lines = (text.slice(0, 8000).split(/\\r\\n|\\n|\\r/).filter(l => l.trim()!=='')).slice(0,5);
+  let c=0, sc=0;
+  for (const l of lines){ c += (l.match(/,/g)||[]).length; sc += (l.match(/;/g)||[]).length; }
+  return sc>c ? ';' : ',';
+}
+
+function parseCSV(text){
+  text = stripBOM(String(text||''));
+  const delim = detectDelimiter(text);
+
+  const rows = [];
+  let i=0, inQuotes=false, field='', row=[];
+
+  const pushField = ()=>{ row.push(field); field=''; };
+  const pushRow   = ()=>{ rows.push(row); row=[]; };
+
+  while (i < text.length){
+    const ch = text[i];
+
+    if (inQuotes){
+      if (ch === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; } // aspas escapadas "" -> "
+        else { inQuotes = false; }
+      } else {
+        field += ch; // preserva \\n / \\r dentro de aspas (campo multilinha)
+      }
+    } else {
+      if (ch === '"'){ inQuotes = true; }
+      else if (ch === delim){ pushField(); }
+      else if (ch === '\\n' || ch === '\\r'){
+        // quebra de linha fora de aspas: fecha célula e linha
+        pushField(); pushRow();
+        if (ch === '\\r' && text[i+1] === '\\n') i++; // pular o \\n do par \\r\\n
+      } else {
+        field += ch;
+      }
+    }
+    i++;
+  }
+
+  // flush final
+  if (field.length || row.length){ pushField(); pushRow(); }
+
+  // remove última linha vazia, se existir
+  while (rows.length && rows[rows.length-1].every(x => String(x).trim()==='')) rows.pop();
+
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => h.trim());
+  const out = [];
+  for (let r=1; r<rows.length; r++){
+    const obj = {};
+    for (let c=0; c<headers.length; c++) obj[headers[c]] = rows[r][c] ?? '';
+    out.push(obj);
+  }
+  return out;
+}
+
+/* ===== OFFLINE GEO ===== */
 const UF_INFO={"AC":{"cap":"Rio Branco","lat":-9.975,"lon":-67.823},"AL":{"cap":"Maceió","lat":-9.649,"lon":-35.708},"AP":{"cap":"Macapá","lat":0.035,"lon":-51.07},"AM":{"cap":"Manaus","lat":-3.118,"lon":-60.021},"BA":{"cap":"Salvador","lat":-12.972,"lon":-38.501},"CE":{"cap":"Fortaleza","lat":-3.731,"lon":-38.51},"DF":{"cap":"Brasília","lat":-15.793,"lon":-47.882},"ES":{"cap":"Vitória","lat":-20.315,"lon":-40.312},"GO":{"cap":"Goiânia","lat":-16.68,"lon":-49.256},"MA":{"cap":"São Luís","lat":-2.53,"lon":-44.306},"MT":{"cap":"Cuiabá","lat":-15.601,"lon":-56.097},"MS":{"cap":"Campo Grande","lat":-20.469,"lon":-54.62},"MG":{"cap":"Belo Horizonte","lat":-19.916,"lon":-43.934},"PA":{"cap":"Belém","lat":-1.456,"lon":-48.501},"PB":{"cap":"João Pessoa","lat":-7.119,"lon":-34.845},"PR":{"cap":"Curitiba","lat":-25.428,"lon":-49.273},"PE":{"cap":"Recife","lat":-8.054,"lon":-34.881},"PI":{"cap":"Teresina","lat":-5.092,"lon":-42.803},"RJ":{"cap":"Rio de Janeiro","lat":-22.906,"lon":-43.172},"RN":{"cap":"Natal","lat":-5.795,"lon":-35.209},"RS":{"cap":"Porto Alegre","lat":-30.034,"lon":-51.217},"RO":{"cap":"Porto Velho","lat":-8.761,"lon":-63.903},"RR":{"cap":"Boa Vista","lat":2.823,"lon":-60.675},"SC":{"cap":"Florianópolis","lat":-27.595,"lon":-48.549},"SP":{"cap":"São Paulo","lat":-23.55,"lon":-46.633},"SE":{"cap":"Aracaju","lat":-10.947,"lon":-37.073},"TO":{"cap":"Palmas","lat":-10.184,"lon":-48.333}};
 const UF_BY_NAME={"Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goías":"GO","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO"};
-
-/* ===== ESTADO DA APP ===== */
-let rawData=[], headers=[], filtered=[], selectionActive=false, selectionFiltered=[], columnsMap={}, leafletMarkers=[];
-const selectIds=['estado','cidade','nomeGrupo','instituicao','tipoInst','usaIA','linhas','setor','site','email','temCluster50','lat','lng'];
-const tableCols=['Grupo','Instituição','Tipo','Estado','Cidade','Usa IA?','Linhas de pesquisa','Setor','Site','E-mail'];
-let sortState={idx:0,asc:true};
-
-/* ===== PARSE CSV ===== */
-function parseCSVText(text){
-  const result = Papa.parse(text, { header: true, skipEmptyLines: 'greedy', dynamicTyping: false });
-  if (result.errors && result.errors.length) console.warn('PapaParse errors:', result.errors);
-  return { headers: result.meta.fields || [], rows: result.data || [] };
-}
-
-/* ===== HELPERS ===== */
-function rmAccents(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
-function normalizeUF(raw, cityVal){
-  const VALID_UF = new Set(Object.keys(UF_INFO));
-  let s = String(raw||'').trim();
-  if(!s && cityVal){
-    const m = String(cityVal).match(/\b([A-Za-z]{2})\b/);
-    if(m && VALID_UF.has(m[1].toUpperCase())) return m[1].toUpperCase();
-  }
-  if(s.length>=2){
-    const mPar = s.match(/\(([A-Za-z]{2})\)/);
-    if(mPar && VALID_UF.has(mPar[1].toUpperCase())) return mPar[1].toUpperCase();
-    const mHy = s.match(/[-\/]\s*([A-Za-z]{2})\b/);
-    if(mHy && VALID_UF.has(mHy[1].toUpperCase())) return mHy[1].toUpperCase();
-    const mEnd = s.match(/\b([A-Za-z]{2})\s*$/);
-    if(mEnd && VALID_UF.has(mEnd[1].toUpperCase())) return mEnd[1].toUpperCase();
-    if(s.replace(/\s+/g,'').length===2) return s.toUpperCase();
-  }
-  const sClean = rmAccents(s);
-  for(const [nome,uf] of Object.entries(UF_BY_NAME)){
-    if(rmAccents(nome).toLowerCase() === sClean.toLowerCase()) return uf;
-  }
-  return null;
-}
+function ufToAcronym(e){if(!e)return null; if(e.length===2&&e.toUpperCase()===e)return e; return UF_BY_NAME[String(e).trim()]||e;}
 function hashCode(s){let h=0;s=String(s||"");for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h);}
-function cityLatLng(city,uf){
-  const info=UF_INFO[uf]; if(!info) return null;
-  if(!city||String(city).trim()==="") return [info.lat,info.lon];
-  const cap = String(city).trim().toLowerCase()===info.cap.toLowerCase();
-  if(cap) return [info.lat,info.lon];
-  const h=hashCode(city+"|"+uf), a=(h%360)*(Math.PI/180), r=0.5+(h%400)/1000;
-  return [info.lat + r*Math.sin(a), info.lon + r*Math.cos(a)];
-}
-// aceita: -23.55 | -23,55 | 23°33'12" S | 23°33' S | 23.55 S | 46.64 W
-function parseCoord(v){
-  let s = String(v||'').trim(); if(!s) return NaN;
-  s = s.replace(',', '.');
-  const m = s.match(/(-?\d+(?:\.\d+)?)\s*[°º]?\s*(\d+(?:\.\d+)?)?['’]?\s*(\d+(?:\.\d+)?)?["”]?\s*([NSEW])?/i);
-  if (m) {
-    let deg = parseFloat(m[1] || 0);
-    const min = parseFloat(m[2] || 0);
-    const sec = parseFloat(m[3] || 0);
-    let val = Math.abs(deg) + (min||0)/60 + (sec||0)/3600;
-    const hasNeg = String(m[1]||'').trim().startsWith('-');
-    const hemi = (m[4]||'').toUpperCase();
-    if (hasNeg || hemi==='S' || hemi==='W') val = -val;
-    return val;
-  }
-  const num = parseFloat(s.replace(/[^\d\.\-]/g,''));
-  if (!Number.isFinite(num)) return NaN;
-  if (/[SW]/i.test(s)) return -Math.abs(num);
-  return num;
-}
+function cityLatLng(city,uf){const info=UF_INFO[uf];if(!info)return null;if(!city||String(city).trim()==="")return[info.lat,info.lon];const cap=String(city).trim().toLowerCase()===info.cap.toLowerCase();if(cap)return[info.lat,info.lon];const h=hashCode(city+"|"+uf),a=(h%360)*(Math.PI/180),r=0.6+(h%400)/1000;return[info.lat+r*Math.sin(a),info.lon+r*Math.cos(a)];}
 
-/* ===== MAPEAR COLUNAS ===== */
-function guessColumns(cols){
-  const find = (patterns)=> cols.find(c => patterns.some(p => new RegExp(p,'i').test(c))) || '';
-  return {
-    estado: find(['^Estado(\\.|$)','^UF$','\\bUF\\b']),
-    cidade: find(['^Cidade(\\.|$)']),
-    nomeGrupo: find(['^Nome do Grupo','^Grupo$','^Nome$','Nome\\s*do\\s*Grupo']),
-    instituicao: find(['Institui.+vinculado','Institui.+grupo','^Institui']),
-    tipoInst: find(['^Tipo de institui','^Tipo$']),
-    usaIA: find(['utiliza Intelig.ncia Artificial','^O grupo utiliza Intelig','^Usa IA','\\bIA\\b']),
-    linhas: find(['Linha.s de pesquisa','Linhas de pesquisa','^Linhas?$','Linhas/Áreas','Áreas']),
-    site: find(['Link do site oficial','^Site','Website','URL']),
-    email: find(['E-mail de contato','Email','^E-?mail']),
-    setor: find(['^Setor econ','^Setor$']),
-    temCluster50: find(['cluster.*50\\s*TFlops','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF']),
-    lat: find(['^lat$','latitude','^Lat(?:itude)?$']),
-    lng: find(['^lon$','^lng$','longitude','^Long(?:itude)?$'])
-  };
-}
-function optListFromHeaders(headers, includeNone){
-  const opts = includeNone? ['(não usar)'].concat(headers) : headers.slice();
-  return opts.map(h=>`<option value="${h}">${h}</option>`).join('');
-}
-const modal=document.getElementById('modalCols');
-function openColsModal(){
-  if(!headers.length){ alert('Carregue um CSV primeiro.'); return; }
-  modal.style.display='flex';
-  const includeNone = true;
-  selectIds.forEach(id=>{
-    const sel=document.getElementById('col_'+id);
-    sel.innerHTML = optListFromHeaders(headers, includeNone);
-  });
-  const saved = JSON.parse(localStorage.getItem('obs_hpcia_mapping')||'{}');
-  const guess = guessColumns(headers);
-  const current = Object.assign({}, guess, saved);
-  selectIds.forEach(id=>{
-    const sel=document.getElementById('col_'+id);
-    const val=current[id] && headers.includes(current[id]) ? current[id] : (guess[id] || '(não usar)');
-    sel.value = val || '(não usar)';
-  });
-}
-function closeColsModal(){ modal.style.display='none'; }
-function getMappingFromUI(){
-  const m={}; selectIds.forEach(id=>{ const v=document.getElementById('col_'+id).value; if(v && v!=='(não usar)') m[id]=v; });
-  return m;
-}
-// Requisitos: Nome do Grupo e (Lat+Lng OU Estado)
-function validateMapping(m){
-  if(!m.nomeGrupo) return false;
-  const hasLL = !!(m.lat && m.lng);
-  const hasUF = !!m.estado;
-  return hasLL || hasUF;
-}
-document.getElementById('configColsBtn').onclick=openColsModal;
-document.getElementById('cancelColsBtn').onclick=closeColsModal;
-document.getElementById('autoMapBtn').onclick=()=>{ const g=guessColumns(headers); selectIds.forEach(id=>{ document.getElementById('col_'+id).value = g[id] || '(não usar)'; }); };
-document.getElementById('saveColsBtn').onclick=()=>{
-  const m=getMappingFromUI();
-  if(!validateMapping(m)){ alert('Preencha: Nome do Grupo e (Latitude+Longitude) ou Estado.'); return; }
-  columnsMap = m; localStorage.setItem('obs_hpcia_mapping', JSON.stringify(m));
-  fillSelectOptions(); applyFilters(); drawMarkers(getActiveView()); fitToMarkers(); closeColsModal();
-};
-document.getElementById('resetColsBtn').onclick=()=>{ localStorage.removeItem('obs_hpcia_mapping'); alert('Mapeamento apagado.'); };
+/* ===== MAP (sem libs) ===== */
+const BOUNDS={latMin:-34,latMax:6,lonMin:-74,lonMax:-34}, world=document.getElementById('world'), mapEl=document.getElementById('map');
+let mapState={scale:1,tx:0,ty:0},isPanning=false,panStart={x:0,y:0},orig={tx:0,ty:0};
+function latlonToXYBase(lat,lon){const r=mapEl.getBoundingClientRect(),w=r.width,h=r.height;const x0=(lon-BOUNDS.lonMin)/(BOUNDS.lonMax-BOUNDS.lonMin)*w;const y0=(BOUNDS.latMax-lat)/(BOUNDS.latMax-BOUNDS.latMin)*h;return[x0,y0];}
+function toScreenPos(bx,by){return[bx*mapState.scale+mapState.tx,by*mapState.scale+mapState.ty];}
+function setTransform(){world.style.transform=`translate(${mapState.tx}px, ${mapState.ty}px) scale(${mapState.scale})`;}
+function xyToLatLon(x,y){const r=mapEl.getBoundingClientRect(),w=r.width,h=r.height;const x0=(x-mapState.tx)/mapState.scale;const y0=(y-mapState.ty)/mapState.scale;const lon=BOUNDS.lonMin+(x0/w)*(BOUNDS.lonMax-BOUNDS.lonMin);const lat=BOUNDS.latMax-(y0/h)*(BOUNDS.latMax-BOUNDS.latMin);return[lat,lon];}
+mapEl.addEventListener('mousedown',e=>{isPanning=true;panStart={x:e.clientX,y:e.clientY};orig={tx:mapState.tx,ty:mapState.ty};});
+window.addEventListener('mouseup',()=>{isPanning=false;});
+window.addEventListener('mousemove',e=>{if(!isPanning)return;const dx=e.clientX-panStart.x,dy=e.clientY-panStart.y;mapState.tx=orig.tx+dx;mapState.ty=orig.ty+dy;setTransform();});
+mapEl.addEventListener('wheel',e=>{e.preventDefault();const d=e.deltaY<0?1.1:0.9;const r=mapEl.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;const before=xyToLatLon(cx,cy);mapState.scale*=d;mapState.scale=Math.max(0.6,Math.min(10,mapState.scale));const after=latlonToXYBase(before[0],before[1]);mapState.tx+=cx-(after[0]*mapState.scale+mapState.tx);mapState.ty+=cy-(after[1]*mapState.scale+mapState.ty);setTransform();},{passive:false});
+document.getElementById('zoomIn').onclick=()=>mapEl.dispatchEvent(new WheelEvent('wheel',{deltaY:-100}));
+document.getElementById('zoomOut').onclick=()=>mapEl.dispatchEvent(new WheelEvent('wheel',{deltaY:100}));
+document.getElementById('zoomFit').onclick=()=>fitToMarkers();
 
-/* ===== UI: filtros/contagem/tabela ===== */
-(function buildHead(){const tr=document.getElementById('theadRow'); tableCols.forEach((n,i)=>{const th=document.createElement('th');th.textContent=n;th.onclick=()=>{sortState={idx:i,asc:(sortState.idx===i?!sortState.asc:true)};renderTable(getActiveView());};tr.appendChild(th);});})();
+const tip=document.createElement('div');tip.className='tooltip';tip.style.display='none';mapEl.appendChild(tip);
+function showTip(html,x,y){tip.innerHTML=html;tip.style.left=(x+12)+'px';tip.style.top=(y+12)+'px';tip.style.display='block';}
+function hideTip(){tip.style.display='none';}
+
+/* ===== Data & filtros ===== */
+let rawData=[],filtered=[],selectionActive=false,selectionFiltered=[],columnsMap={},markers=[];
+function guessColumns(cols){const f=p=>cols.find(c=>p.some(q=>new RegExp(q,'i').test(c)))||null;return{
+  estado:f(['^Estado(\\.|$)','^UF$']),cidade:f(['^Cidade(\\.|$)']),nomeGrupo:f(['^Nome do Grupo']),
+  instituicao:f(['Institui.+vinculado','Institui.+grupo']),tipoInst:f(['^Tipo de institui']),
+  usaIA:f(['utiliza Intelig.ncia Artificial','^O grupo utiliza Intelig']),linhas:f(['Linha.s de pesquisa','Linhas de pesquisa']),
+  site:f(['Link do site oficial']),email:f(['E-mail de contato']),setor:f(['^Setor econ']),
+  temCluster50:f(['cluster.*50\\s*TFlops','capacidade superior a 50\\s*TFlops'])
+};}
 function uniq(a){return Array.from(new Set(a.filter(x=>x!=null&&String(x).trim()!=='')));}
-function fillSelectOptions(){
-  const eSel=document.getElementById('estadoSel'), tSel=document.getElementById('tipoInstSel');
-  eSel.innerHTML='<option value=\"\">Todos</option>'; tSel.innerHTML='<option value=\"\">Todos</option>';
-  if(columnsMap.estado){
-    uniq(rawData.map(r=>r[columnsMap.estado]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(e=>{const o=document.createElement('option');o.textContent=e;o.value=e;eSel.appendChild(o);});
-  }
-  if(columnsMap.tipoInst){
-    uniq(rawData.map(r=>r[columnsMap.tipoInst]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(t=>{const o=document.createElement('option');o.textContent=t;o.value=t;tSel.appendChild(o);});
-  }
+function fillSelectOptions(){const eSel=document.getElementById('estadoSel'),tSel=document.getElementById('tipoInstSel');eSel.innerHTML='<option value=\"\">Todos</option>';tSel.innerHTML='<option value=\"\">Todos</option>';
+  uniq(rawData.map(r=>r[columnsMap.estado])).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(e=>{const o=document.createElement('option');o.textContent=e;o.value=e;eSel.appendChild(o);});
+  uniq(rawData.map(r=>r[columnsMap.tipoInst])).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(t=>{const o=document.createElement('option');o.textContent=t;o.value=t;tSel.appendChild(o);});
 }
 function applyFilters(){
-  if(!columnsMap.nomeGrupo) return;
-  const estado=estadoSel.value, tipo=tipoInstSel.value, usaIA=usaIASel.value, temCluster=temClusterSel.value, busca=buscaTxt.value.trim().toLowerCase();
-  filtered = rawData.filter(r=>{
-    const byE = !columnsMap.estado || !estado || String(r[columnsMap.estado]||'').trim()===estado;
-    const byT = !columnsMap.tipoInst || !tipo || String(r[columnsMap.tipoInst]||'').trim()===tipo;
-    const byIA = !columnsMap.usaIA || !usaIA || String(r[columnsMap.usaIA]||'').toLowerCase().includes(usaIA.toLowerCase());
-    let byC = true; if(columnsMap.temCluster50 && temCluster){ const v=(r[columnsMap.temCluster50]||'').toString().toLowerCase(); if(temCluster==='Sim')byC=v.includes('sim'); if(temCluster==='Não')byC=v.includes('não')||v.includes('nao'); }
-    const blob=[columnsMap.nomeGrupo,columnsMap.instituicao,columnsMap.cidade,columnsMap.linhas,columnsMap.setor].map(k=>k?(r[k]||'').toString().toLowerCase():'').join(' ');
+  const estado=estadoSel.value,tipo=tipoInstSel.value,usaIA=usaIASel.value,temCluster=temClusterSel.value,busca=buscaTxt.value.trim().toLowerCase();
+  filtered=rawData.filter(r=>{
+    const byE=!estado||String(r[columnsMap.estado]).trim()===estado;
+    const byT=!tipo||String(r[columnsMap.tipoInst]).trim()===tipo;
+    const byIA=!usaIA||String(r[columnsMap.usaIA]).toLowerCase().includes(usaIA.toLowerCase());
+    let byC=true;if(temCluster){const v=(r[columnsMap.temCluster50]||'').toString().toLowerCase();if(temCluster==='Sim')byC=v.includes('sim');if(temCluster==='Não')byC=v.includes('não')||v.includes('nao');}
+    const blob=[r[columnsMap.nomeGrupo],r[columnsMap.instituicao],r[columnsMap.cidade],r[columnsMap.linhas],r[columnsMap.setor]].map(x=>(x||'').toString().toLowerCase()).join(' ');
     return byE&&byT&&byIA&&byC&&(!busca||blob.includes(busca));
   });
-  if(selectionActive){ selectionFiltered = filtered.filter(r=>isRowInViewport(r)); }
+  if(selectionActive){selectionFiltered=filtered.filter(r=>isRowInViewport(r));}
   renderAll();
 }
 function getActiveView(){return selectionActive?selectionFiltered:filtered;}
-function renderAll(){
-  const v=getActiveView();
-  renderLiveResults(v); renderResumo(v); renderTable(v);
-  countPill.textContent=`${v.length} ${v.length===1?'grupo':'grupos'}`;
-  statePill.textContent=(columnsMap.estado && estadoSel.value) ? estadoSel.value : 'Brasil';
-  statusMsg.textContent='';
-}
+function renderAll(){const v=getActiveView();renderLiveResults(v);renderResumo(v);renderTable(v);countPill.textContent=`${v.length} ${v.length===1?'grupo':'grupos'}`;statePill.textContent=estadoSel.value||'Brasil';}
+
 function renderLiveResults(v){
-  const box=liveResults;
-  if(!v.length){ box.innerHTML='<div class="muted">Sem resultados para os filtros atuais.</div>'; return; }
+  const box=liveResults;if(!v.length){box.innerHTML='<div class="muted">Sem resultados para os filtros atuais.</div>';return;}
   box.innerHTML=v.slice(0,150).map(r=>{
-    const nome=r[columnsMap.nomeGrupo]||'—',inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',est=columnsMap.estado?(r[columnsMap.estado]||'—'):'—',cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
-    const site=columnsMap.site?(r[columnsMap.site]||''):'', link=site?` <a href="${String(site).startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:'';
-    return `<div class="result-item"><div><b>${nome}</b></div><div class="muted">${inst} · ${cid}${columnsMap.estado?' / '+est:''} · IA: ${ia}${link}</div></div>`;
+    const nome=r[columnsMap.nomeGrupo]||'—',inst=r[columnsMap.instituicao]||'—',est=r[columnsMap.estado]||'—',cid=r[columnsMap.cidade]||'—',ia=r[columnsMap.usaIA]||'—';
+    const site=r[columnsMap.site];const link=site?` <a href="${String(site).startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:'';
+    return `<div class="result-item"><div><b>${nome}</b></div><div class="muted">${inst} · ${cid} / ${est} · IA: ${ia}${link}</div></div>`;
   }).join('') + (v.length>150?`<div class="muted" style="margin-top:6px">… e mais ${v.length-150} resultados</div>`:'');
 }
 function renderResumo(v){
-  // Contagens gerais
-  const est=new Set(), cid=new Set(), inst=new Set();
-  v.forEach(r=>{ if(columnsMap.estado && r[columnsMap.estado])est.add(r[columnsMap.estado]); if(columnsMap.cidade && r[columnsMap.cidade])cid.add(r[columnsMap.cidade]); if(columnsMap.instituicao && r[columnsMap.instituicao])inst.add(r[columnsMap.instituicao]); });
-  // Geolocalização efetiva
-  const geoOK = v.filter(r => !!getLatLngForRow(r)).length;
-  // Top estados
-  let topHtml='—';
-  if(columnsMap.estado){
-    const counts={}; v.forEach(r=>{ const e=r[columnsMap.estado]||'—'; counts[e]=(counts[e]||0)+1; });
-    const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    topHtml=top.length?top.map(([e,c])=>`<div>${e}: <b>${c}</b></div>`).join(''):'—';
-  }
-  // IA e Tipo
-  const ia={'Sim':0,'Não':0}, tipos={};
-  v.forEach(r=>{
-    if(columnsMap.usaIA){ const t=(r[columnsMap.usaIA]||'').toString().toLowerCase(); if(t.includes('sim'))ia['Sim']++; else if(t.includes('não')||t.includes('nao'))ia['Não']++; }
-    const tp=columnsMap.tipoInst?(r[columnsMap.tipoInst]||'—'):'—'; tipos[tp]=(tipos[tp]||0)+1;
-  });
-  const tiposHtml=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([t,c])=>`${t||'—'}: <b>${c}</b>`).join(' · ');
-  document.getElementById('resumoCounts').innerHTML=
-    `Estados: <b>${est.size}</b> · Cidades: <b>${cid.size}</b> · Instituições: <b>${inst.size}</b><br>`+
-    `Geolocalizados: <b>${geoOK}</b> / Total: <b>${v.length}</b>`;
-  document.getElementById('topEstados').innerHTML=topHtml;
-  document.getElementById('distIAETipo').innerHTML=`IA — Sim: <b>${ia['Sim']}</b> · Não: <b>${ia['Não']}</b><br>${tiposHtml}`;
+  const est=new Set(),cid=new Set(),inst=new Set();v.forEach(r=>{if(r[columnsMap.estado])est.add(r[columnsMap.estado]);if(r[columnsMap.cidade])cid.add(r[columnsMap.cidade]);if(r[columnsMap.instituicao])inst.add(r[columnsMap.instituicao]);});
+  resumoCounts.innerHTML=`Estados: <b>${est.size}</b> · Cidades: <b>${cid.size}</b> · Instituições: <b>${inst.size}</b>`;
+  const counts={};v.forEach(r=>{const e=r[columnsMap.estado]||'—';counts[e]=(counts[e]||0)+1;});
+  const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);topEstados.innerHTML=top.length?top.map(([e,c])=>`<div>${e}: <b>${c}</b></div>`).join(''):'—';
+  const ia={'Sim':0,'Não':0},tipos={};v.forEach(r=>{const t=(r[columnsMap.usaIA]||'').toString().toLowerCase();if(t.includes('sim'))ia['Sim']++;else if(t.includes('não')||t.includes('nao'))ia['Não']++;const tp=r[columnsMap.tipoInst];tipos[tp]=(tipos[tp]||0)+1;});
+  const tiposHtml=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([t,c])=>`${t||'—'}: <b>${c}</b>`).join(' · ');distIAETipo.innerHTML=`IA — Sim: <b>${ia['Sim']}</b> · Não: <b>${ia['Não']}</b><br>${tiposHtml}`;
 }
-(function buildHead(){const tr=document.getElementById('theadRow'); tableCols.forEach((n,i)=>{ /* já criado acima */ });})();
+const tableCols=['Grupo','Instituição','Tipo','Estado','Cidade','Usa IA?','Linhas de pesquisa','Setor','Site','E-mail'];let sortState={idx:0,asc:true};
+(function buildHead(){const tr=document.getElementById('theadRow');tableCols.forEach((n,i)=>{const th=document.createElement('th');th.textContent=n;th.onclick=()=>{sortState={idx:i,asc:(sortState.idx===i?!sortState.asc:true)};renderTable(getActiveView());};tr.appendChild(th);});})();
 function renderTable(v){
   const tbody=document.getElementById('tbody');
-  const rows=v.map(r=>[
-    r[columnsMap.nomeGrupo]||'—',
-    columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',
-    columnsMap.tipoInst?(r[columnsMap.tipoInst]||'—'):'—',
-    columnsMap.estado?(r[columnsMap.estado]||'—'):'—',
-    columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',
-    columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—',
-    columnsMap.linhas?(r[columnsMap.linhas]||'—'):'—',
-    columnsMap.setor?(r[columnsMap.setor]||'—'):'—',
-    columnsMap.site?(r[columnsMap.site]||'—'):'—',
-    columnsMap.email?(r[columnsMap.email]||'—'):'—',
-  ]);
+  const rows=v.map(r=>[r[columnsMap.nomeGrupo]||'—',r[columnsMap.instituicao]||'—',r[columnsMap.tipoInst]||'—',r[columnsMap.estado]||'—',r[columnsMap.cidade]||'—',r[columnsMap.usaIA]||'—',r[columnsMap.linhas]||'—',r[columnsMap.setor]||'—',r[columnsMap.site]||'—',r[columnsMap.email]||'—']);
   rows.sort((a,b)=>{const A=(a[sortState.idx]||'').toString().toLowerCase(),B=(b[sortState.idx]||'').toString().toLowerCase();return A<B?(sortState.asc?-1:1):A>B?(sortState.asc?1:-1):0;});
-  tbody.innerHTML=rows.map(cols=>`<tr>${cols.map((c,i)=> i===8 && c && c!=='—' ? `<td><a href="${String(c).startsWith('http')?c:'http://'+c}" target="_blank" rel="noopener">abrir</a></td>`:`<td>${c||''}</td>`).join('')}</tr>`).join('');
+  tbody.innerHTML=rows.map(cols=>`<tr>${cols.map((c,i)=>i===8&&c&&c!=='—'?`<td><a href="${String(c).startsWith('http')?c:'http://'+c}" target="_blank" rel="noopener">abrir</a></td>`:`<td>${c||''}</td>`).join('')}</tr>`).join('');
 }
 
-/* ===== MARCADORES (Leaflet) ===== */
-function mkStyle(ia,cl){
-  const i = columnsMap.usaIA && String(ia||'').toLowerCase().includes('sim');
-  const c = columnsMap.temCluster50 && String(cl||'').toLowerCase().includes('sim');
-  let color = '#94a3b8'; // slate
-  if(i && c) color = '#f59e0b';
-  else if(i && !c) color = '#10b981';
-  else if(!i && c) color = '#fb923c';
-  return { radius: 7, color:'#0b0f14', weight:2, fillColor:color, fillOpacity:0.95 };
-}
-function getLatLngForRow(r){
-  // 1) Preferir lat/lon do CSV
-  if(columnsMap.lat && columnsMap.lng){
-    const lat = parseCoord(r[columnsMap.lat]);
-    const lng = parseCoord(r[columnsMap.lng]);
-    if(Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat)<=90 && Math.abs(lng)<=180){
-      return [lat,lng];
-    }
-  }
-  // 2) Fallback Cidade+UF (ou capital do estado)
-  if(columnsMap.estado){
-    const uf = normalizeUF(r[columnsMap.estado], columnsMap.cidade? r[columnsMap.cidade] : '');
-    if(!uf) return null;
-    return cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
-  }
-  return null;
-}
-function drawMarkers(v){
-  markersLayer.clearLayers(); leafletMarkers = [];
+/* ===== Marcadores ===== */
+function markerClass(ia,cl){const i=String(ia||'').toLowerCase().includes('sim'),c=String(cl||'').toLowerCase().includes('sim');return 'marker '+(i&&c?'mk-gold':i&&!c?'mk-green':!i&&c?'mk-orange':'mk-slate');}
+function buildMarkers(v){
+  world.innerHTML='';markers=[];
   v.forEach(r=>{
-    const ll = getLatLngForRow(r);
-    if(!ll) return;
-    const style = mkStyle(columnsMap.usaIA? r[columnsMap.usaIA] : '', columnsMap.temCluster50? r[columnsMap.temCluster50] : '');
-    const nome=r[columnsMap.nomeGrupo]||'—', inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—', est=columnsMap.estado?(r[columnsMap.estado]||'—'):'—', cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—', ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
-    const site=columnsMap.site?(r[columnsMap.site]||''):'';
-    const html = `<b>${nome}</b><br>${inst}<br>${cid}${columnsMap.estado?' / '+est:''}<br>IA: ${ia}${site?`<br><a href="${site.startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:''}`;
-    const m = L.circleMarker(ll, style).bindPopup(html, { maxWidth: 260 });
-    m.addTo(markersLayer);
-    leafletMarkers.push(m);
+    const uf=ufToAcronym(r[columnsMap.estado]||"");const ll=cityLatLng(r[columnsMap.cidade],uf);if(!ll)return;
+    const base=latlonToXYBase(ll[0],ll[1]);const el=document.createElement('div');el.className=markerClass(r[columnsMap.usaIA],r[columnsMap.temCluster50]);el.style.left=base[0]+'px';el.style.top=base[1]+'px';
+    const nome=r[columnsMap.nomeGrupo]||'—',inst=r[columnsMap.instituicao]||'—',est=r[columnsMap.estado]||'—',cid=r[columnsMap.cidade]||'—',ia=r[columnsMap.usaIA]||'—',site=r[columnsMap.site];
+    const link=site?`<br><a href="${String(site).startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:'';const html=`<b>${nome}</b><br>${inst}<br>${cid} / ${est}<br>IA: ${ia}${link}`;
+    el.addEventListener('mouseenter',()=>{const s=toScreenPos(base[0],base[1]);showTip(html,s[0],s[1]);});el.addEventListener('mouseleave',hideTip);
+    world.appendChild(el);markers.push({baseX:base[0],baseY:base[1]});
   });
+  setTransform();
 }
-function fitToMarkers(){
-  if(!leafletMarkers.length) return;
-  const group = L.featureGroup(leafletMarkers);
-  map.fitBounds(group.getBounds().pad(0.15), { animate:true });
-}
-function isRowInViewport(r){
-  const ll = getLatLngForRow(r);
-  if(!ll) return false;
-  return map.getBounds().contains(ll);
-}
+function fitToMarkers(){if(!markers.length)return;const r=mapEl.getBoundingClientRect(),w=r.width,h=r.height;let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;markers.forEach(m=>{minX=Math.min(minX,m.baseX);minY=Math.min(minY,m.baseY);maxX=Math.max(maxX,m.baseX);maxY=Math.max(maxY,m.baseY);});
+  const pad=40,bw=(maxX-minX)||1,bh=(maxY-minY)||1,sx=(w-2*pad)/bw,sy=(h-2*pad)/bh;mapState.scale=Math.max(0.6,Math.min(8,Math.min(sx,sy)));
+  const cx=(minX+maxX)/2,cy=(minY+maxY)/2;mapState.tx=w/2-cx*mapState.scale;mapState.ty=h/2-cy*mapState.scale;setTransform();hideTip();}
+function isRowInViewport(r){const uf=ufToAcronym(r[columnsMap.estado]||"");const ll=cityLatLng(r[columnsMap.cidade],uf);if(!ll)return false;const s=toScreenPos(...latlonToXYBase(ll[0],ll[1]));const rect=mapEl.getBoundingClientRect();return s[0]>=0&&s[0]<=rect.width&&s[1]>=0&&s[1]<=rect.height;}
 
-/* ===== EVENTS ===== */
+/* ===== Events ===== */
 estadoSel.onchange=tipoInstSel.onchange=usaIASel.onchange=temClusterSel.onchange=applyFilters;
 buscaTxt.oninput=applyFilters;
-document.getElementById('limparBtn').onclick=()=>{estadoSel.value='';tipoInstSel.value='';usaIASel.value='';temClusterSel.value='';buscaTxt.value='';selectionActive=false;selectionFiltered=[];document.getElementById('limparSelecaoBtn').style.display='none';statusMsg.textContent='';applyFilters();};
-document.getElementById('buscarBtn').onclick=()=>{drawMarkers(getActiveView());fitToMarkers();statusMsg.textContent=`Marcadores: ${leafletMarkers.length}`;};
-document.getElementById('selecionarMapaBtn').onclick=()=>{selectionFiltered=filtered.filter(isRowInViewport);selectionActive=true;document.getElementById('limparSelecaoBtn').style.display='';renderAll();drawMarkers(getActiveView());fitToMarkers();statusMsg.textContent=`Selecionados no mapa: ${selectionFiltered.length}`;};
-document.getElementById('limparSelecaoBtn').onclick=()=>{selectionActive=false;selectionFiltered=[];document.getElementById('limparSelecaoBtn').style.display='none';renderAll();drawMarkers(getActiveView());statusMsg.textContent='';};
-map.on('moveend',()=>{ if(selectionActive){ selectionFiltered=filtered.filter(isRowInViewport); renderAll(); drawMarkers(getActiveView()); }});
+limparBtn.onclick=()=>{estadoSel.value='';tipoInstSel.value='';usaIASel.value='';temClusterSel.value='';buscaTxt.value='';selectionActive=false;selectionFiltered=[];limparSelecaoBtn.style.display='none';statusMsg.textContent='';applyFilters();buildMarkers(getActiveView());};
+buscarBtn.onclick=()=>{buildMarkers(getActiveView());fitToMarkers();statusMsg.textContent=`Marcadores: ${markers.length}`;};
+selecionarMapaBtn.onclick=()=>{selectionFiltered=filtered.filter(isRowInViewport);selectionActive=true;limparSelecaoBtn.style.display='';renderAll();buildMarkers(getActiveView());statusMsg.textContent=`Selecionados no mapa: ${selectionFiltered.length}`;};
+limparSelecaoBtn.onclick=()=>{selectionActive=false;selectionFiltered=[];limparSelecaoBtn.style.display='none';renderAll();buildMarkers(getActiveView());statusMsg.textContent='';};
+window.addEventListener('resize',()=>buildMarkers(getActiveView()));
 
-/* ===== CARREGAR CSV (arquivo / URL / ?csv=) ===== */
-const fileInput=document.getElementById('fileInput'), drop=document.getElementById('drop');
-fileInput.addEventListener('change',e=>{const f=e.target.files[0]; if(f){ const reader=new FileReader(); reader.onload=()=>bootWithCSV(reader.result); reader.readAsText(f); }});
-['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor='#4b5563';}));
-['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.style.borderColor='#334155';}));
-drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f){ const reader=new FileReader(); reader.onload=()=>bootWithCSV(reader.result); reader.readAsText(f); }});
+/* ===== File loader (auto encoding) ===== */
+const fileInput=document.getElementById('fileInput'),drop=document.getElementById('drop');
+fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(f)loadCSVFile(f);});
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='#4b5563';}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='#334155';}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadCSVFile(f);});
+function loadCSVFile(file){const r=new FileReader();r.onload=()=>bootWithCSV(r.result);r.readAsText(file);}
 
-document.getElementById('loadUrlBtn').onclick=()=>{
-  const url = document.getElementById('csvUrl').value.trim();
-  if(!url){ alert('Informe a URL do CSV.'); return; }
-  fetch(url,{cache:'no-store'})
-    .then(r=>{ if(!r.ok) throw new Error('Falha ao baixar CSV'); return r.text(); })
-    .then(text=>bootWithCSV(text))
-    .catch(err=>{ console.error(err); alert('Não foi possível carregar o CSV desta URL (CORS/URL inválida?).'); });
-};
-
-// auto-load via ?csv=
-(function(){
-  const urlParam = new URLSearchParams(location.search).get('csv');
-  if(urlParam){
-    document.getElementById('csvUrl').value = urlParam;
-    document.getElementById('loadUrlBtn').click();
-  }
-})();
-
-/* ===== BOOT ===== */
 function bootWithCSV(text){
-  const parsed = parseCSVText(text);
-  headers = parsed.headers;
-  rawData = parsed.rows;
-  if(!rawData.length){ alert('CSV vazio ou inválido.'); return; }
-
-  const saved = JSON.parse(localStorage.getItem('obs_hpcia_mapping')||'{}');
-  const guess = guessColumns(headers);
-  columnsMap = Object.assign({}, guess, saved);
-
-  // Se não passou na nova regra (Nome + (Lat/Lon ou Estado)), peça mapeamento.
-  if(!validateMapping(columnsMap)){
-    openColsModal();
-  }else{
-    fillSelectOptions(); applyFilters(); drawMarkers(getActiveView()); fitToMarkers();
-    document.getElementById('liveResults').scrollTop=0; statusMsg.textContent='CSV carregado.';
-  }
+  rawData=parseCSV(text);
+  if(!rawData.length){alert('CSV vazio ou inválido.');return;}
+  columnsMap=guessColumns(Object.keys(rawData[0]));
+  if(!columnsMap.estado||!columnsMap.nomeGrupo){alert('Não encontrei colunas essenciais (Estado e Nome do Grupo). Revise os cabeçalhos.');return;}
+  fillSelectOptions();applyFilters();buildMarkers(getActiveView());fitToMarkers();
+  liveResults.scrollTop=0;statusMsg.textContent='CSV carregado.';
 }
 </script>
 </body>
