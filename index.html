@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Observatório HPC & IA — Brasil (GitHub Pages, online)</title>
+<title>Observatório HPC & IA — Brasil (GitHub Pages, online • Lat/Lon do CSV)</title>
 
 <!-- Leaflet (mapa online) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -13,7 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-  :root{--bg:#0b0f14;--panel:#111826;--muted:#94a3b8;--border:#1f2937;--text:#e5e7eb;--green:#10b981;--gold:#f59e0b;--orange:#fb923c;--slate:#94a3b8;--accent:#38bdf8}
+  :root{--bg:#0b0f14;--panel:#111826;--muted:#94a3b8;--border:#1f2937;--text:#e5e7eb;--green:#10b981;--gold:#f59e0b;--orange:#fb923c;--slate:#94a3b8}
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;background:var(--bg);color:var(--text)}
   header{padding:16px 20px;border-bottom:1px solid var(--border);background:#0d1320;position:sticky;top:0;z-index:30}
@@ -57,7 +57,7 @@
 </head>
 <body>
 <header>
-  <h1>Observatório HPC & IA — Brasil <span class="muted" style="font-weight:normal">· GitHub Pages (online)</span></h1>
+  <h1>Observatório HPC & IA — Brasil <span class="muted" style="font-weight:normal">· GitHub Pages (online • Lat/Lon do CSV)</span></h1>
 </header>
 
 <div class="container">
@@ -73,7 +73,7 @@
       <button class="btn" id="configColsBtn">Configurar colunas</button>
       <button class="btn" id="resetColsBtn" title="Apagar mapeamento salvo">Redefinir mapeamento</button>
     </div>
-    <div class="small">O CSV deve ter a <b>primeira linha como cabeçalho</b>. Para máxima precisão, inclua colunas <b>Latitude</b> e <b>Longitude</b> e mapeie-as no modal.</div>
+    <div class="small">O CSV deve ter a <b>primeira linha como cabeçalho</b>. Mapeie <b>Latitude</b> e <b>Longitude</b> para posicionamento exato.</div>
 
     <h2>Filtros</h2>
     <label for="estadoSel">Estado</label><select id="estadoSel"><option value="">Todos</option></select>
@@ -109,7 +109,7 @@
 
     <div class="panel">
       <div class="row">
-        <div class="card"><h3>Resumo</h3><div class="muted" id="resumoCounts">—</div><div class="chips" id="resumoChips"></div></div>
+        <div class="card"><h3>Resumo</h3><div class="muted" id="resumoCounts">—</div></div>
         <div class="card"><h3>Grupos por Estado</h3><div class="muted" id="topEstados">—</div></div>
         <div class="card"><h3>Uso de IA &amp; Tipo</h3><div class="muted" id="distIAETipo">—</div></div>
       </div>
@@ -124,9 +124,9 @@
 <div class="modal" id="modalCols">
   <div class="box">
     <h3 style="margin:0 0 8px">Mapeamento de colunas</h3>
-    <div class="small" style="margin-bottom:10px">Selecione em qual coluna do CSV está cada informação. <b>Obrigatório</b>: Estado e Nome do Grupo.</div>
+    <div class="small" style="margin-bottom:10px">Selecione em qual coluna do CSV está cada informação. <b>Obrigatório</b>: Nome do Grupo e (Latitude+Longitude) <i>ou</i> Estado.</div>
     <div class="grid2">
-      <div><label>Estado <span class="req">*</span></label><select id="col_estado"></select></div>
+      <div><label>Estado</label><select id="col_estado"></select></div>
       <div><label>Cidade</label><select id="col_cidade"></select></div>
       <div><label>Nome do Grupo <span class="req">*</span></label><select id="col_nomeGrupo"></select></div>
       <div><label>Instituição</label><select id="col_instituicao"></select></div>
@@ -150,54 +150,57 @@
 </div>
 
 <footer style="padding:12px 14px;color:var(--muted)">
-  Hospede este arquivo no GitHub Pages. Para auto-carregar um CSV por URL, use <code>?csv=URL</code>.<br/>
-  Ex.: <code>https://seuusuario.github.io/seurepo/index.html?csv=dados.csv</code>
+  Publique no GitHub Pages. Para auto-carregar um CSV por URL, use <code>?csv=URL</code> (mesmo domínio evita CORS).
 </footer>
 
 <script>
 /* ===== LEAFLET MAP ===== */
 const map = L.map('leaf', { zoomControl: true, minZoom: 3, maxZoom: 18 });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap'
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 map.setView([-14.235, -51.925], 4);
-
 const markersLayer = L.layerGroup().addTo(map);
 
 /* ===== GEO APOIO ===== */
 const UF_INFO={"AC":{"cap":"Rio Branco","lat":-9.975,"lon":-67.823},"AL":{"cap":"Maceió","lat":-9.649,"lon":-35.708},"AP":{"cap":"Macapá","lat":0.035,"lon":-51.07},"AM":{"cap":"Manaus","lat":-3.118,"lon":-60.021},"BA":{"cap":"Salvador","lat":-12.972,"lon":-38.501},"CE":{"cap":"Fortaleza","lat":-3.731,"lon":-38.51},"DF":{"cap":"Brasília","lat":-15.793,"lon":-47.882},"ES":{"cap":"Vitória","lat":-20.315,"lon":-40.312},"GO":{"cap":"Goiânia","lat":-16.68,"lon":-49.256},"MA":{"cap":"São Luís","lat":-2.53,"lon":-44.306},"MT":{"cap":"Cuiabá","lat":-15.601,"lon":-56.097},"MS":{"cap":"Campo Grande","lat":-20.469,"lon":-54.62},"MG":{"cap":"Belo Horizonte","lat":-19.916,"lon":-43.934},"PA":{"cap":"Belém","lat":-1.456,"lon":-48.501},"PB":{"cap":"João Pessoa","lat":-7.119,"lon":-34.845},"PR":{"cap":"Curitiba","lat":-25.428,"lon":-49.273},"PE":{"cap":"Recife","lat":-8.054,"lon":-34.881},"PI":{"cap":"Teresina","lat":-5.092,"lon":-42.803},"RJ":{"cap":"Rio de Janeiro","lat":-22.906,"lon":-43.172},"RN":{"cap":"Natal","lat":-5.795,"lon":-35.209},"RS":{"cap":"Porto Alegre","lat":-30.034,"lon":-51.217},"RO":{"cap":"Porto Velho","lat":-8.761,"lon":-63.903},"RR":{"cap":"Boa Vista","lat":2.823,"lon":-60.675},"SC":{"cap":"Florianópolis","lat":-27.595,"lon":-48.549},"SP":{"cap":"São Paulo","lat":-23.55,"lon":-46.633},"SE":{"cap":"Aracaju","lat":-10.947,"lon":-37.073},"TO":{"cap":"Palmas","lat":-10.184,"lon":-48.333}};
 const UF_BY_NAME={"Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goías":"GO","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO"};
-const VALID_UF = new Set(Object.keys(UF_INFO));
 
+/* ===== ESTADO DA APP ===== */
+let rawData=[], headers=[], filtered=[], selectionActive=false, selectionFiltered=[], columnsMap={}, leafletMarkers=[];
+const selectIds=['estado','cidade','nomeGrupo','instituicao','tipoInst','usaIA','linhas','setor','site','email','temCluster50','lat','lng'];
+const tableCols=['Grupo','Instituição','Tipo','Estado','Cidade','Usa IA?','Linhas de pesquisa','Setor','Site','E-mail'];
+let sortState={idx:0,asc:true};
+
+/* ===== PARSE CSV ===== */
+function parseCSVText(text){
+  const result = Papa.parse(text, { header: true, skipEmptyLines: 'greedy', dynamicTyping: false });
+  if (result.errors && result.errors.length) console.warn('PapaParse errors:', result.errors);
+  return { headers: result.meta.fields || [], rows: result.data || [] };
+}
+
+/* ===== HELPERS ===== */
 function rmAccents(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function normalizeUF(raw, cityVal){
+  const VALID_UF = new Set(Object.keys(UF_INFO));
   let s = String(raw||'').trim();
-  if(!s && cityVal){ // tentar extrair UF do padrão "Cidade - UF"
+  if(!s && cityVal){
     const m = String(cityVal).match(/\b([A-Za-z]{2})\b/);
     if(m && VALID_UF.has(m[1].toUpperCase())) return m[1].toUpperCase();
   }
-  // caso 2 letras qualquer caixa
   if(s.length>=2){
-    // pegar UF dentro de parênteses ou após hífen
     const mPar = s.match(/\(([A-Za-z]{2})\)/);
     if(mPar && VALID_UF.has(mPar[1].toUpperCase())) return mPar[1].toUpperCase();
     const mHy = s.match(/[-\/]\s*([A-Za-z]{2})\b/);
     if(mHy && VALID_UF.has(mHy[1].toUpperCase())) return mHy[1].toUpperCase();
-    // duas letras “soltas” no fim
     const mEnd = s.match(/\b([A-Za-z]{2})\s*$/);
     if(mEnd && VALID_UF.has(mEnd[1].toUpperCase())) return mEnd[1].toUpperCase();
-    // exatamente duas letras
     if(s.replace(/\s+/g,'').length===2) return s.toUpperCase();
   }
-  // por nome do estado (com/sem acento)
   const sClean = rmAccents(s);
   for(const [nome,uf] of Object.entries(UF_BY_NAME)){
     if(rmAccents(nome).toLowerCase() === sClean.toLowerCase()) return uf;
   }
   return null;
 }
-
 function hashCode(s){let h=0;s=String(s||"");for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h);}
 function cityLatLng(city,uf){
   const info=UF_INFO[uf]; if(!info) return null;
@@ -207,19 +210,25 @@ function cityLatLng(city,uf){
   const h=hashCode(city+"|"+uf), a=(h%360)*(Math.PI/180), r=0.5+(h%400)/1000;
   return [info.lat + r*Math.sin(a), info.lon + r*Math.cos(a)];
 }
-
-/* ===== ESTADO DA APLICAÇÃO ===== */
-let rawData=[], headers=[], filtered=[], selectionActive=false, selectionFiltered=[], columnsMap={}, leafletMarkers=[];
-const REQUIRED_KEYS = ['estado', 'nomeGrupo'];
-const selectIds=['estado','cidade','nomeGrupo','instituicao','tipoInst','usaIA','linhas','setor','site','email','temCluster50','lat','lng'];
-const tableCols=['Grupo','Instituição','Tipo','Estado','Cidade','Usa IA?','Linhas de pesquisa','Setor','Site','E-mail'];
-let sortState={idx:0,asc:true};
-
-/* ===== PARSE CSV (PapaParse) ===== */
-function parseCSVText(text){
-  const result = Papa.parse(text, { header: true, skipEmptyLines: 'greedy', dynamicTyping: false });
-  if (result.errors && result.errors.length) console.warn('PapaParse errors:', result.errors);
-  return { headers: result.meta.fields || [], rows: result.data || [] };
+// aceita: -23.55 | -23,55 | 23°33'12" S | 23°33' S | 23.55 S | 46.64 W
+function parseCoord(v){
+  let s = String(v||'').trim(); if(!s) return NaN;
+  s = s.replace(',', '.');
+  const m = s.match(/(-?\d+(?:\.\d+)?)\s*[°º]?\s*(\d+(?:\.\d+)?)?['’]?\s*(\d+(?:\.\d+)?)?["”]?\s*([NSEW])?/i);
+  if (m) {
+    let deg = parseFloat(m[1] || 0);
+    const min = parseFloat(m[2] || 0);
+    const sec = parseFloat(m[3] || 0);
+    let val = Math.abs(deg) + (min||0)/60 + (sec||0)/3600;
+    const hasNeg = String(m[1]||'').trim().startsWith('-');
+    const hemi = (m[4]||'').toUpperCase();
+    if (hasNeg || hemi==='S' || hemi==='W') val = -val;
+    return val;
+  }
+  const num = parseFloat(s.replace(/[^\d\.\-]/g,''));
+  if (!Number.isFinite(num)) return NaN;
+  if (/[SW]/i.test(s)) return -Math.abs(num);
+  return num;
 }
 
 /* ===== MAPEAR COLUNAS ===== */
@@ -268,13 +277,19 @@ function getMappingFromUI(){
   const m={}; selectIds.forEach(id=>{ const v=document.getElementById('col_'+id).value; if(v && v!=='(não usar)') m[id]=v; });
   return m;
 }
-function validateMapping(m){ for(const k of REQUIRED_KEYS){ if(!m[k]) return false; } return true; }
+// Requisitos: Nome do Grupo e (Lat+Lng OU Estado)
+function validateMapping(m){
+  if(!m.nomeGrupo) return false;
+  const hasLL = !!(m.lat && m.lng);
+  const hasUF = !!m.estado;
+  return hasLL || hasUF;
+}
 document.getElementById('configColsBtn').onclick=openColsModal;
 document.getElementById('cancelColsBtn').onclick=closeColsModal;
 document.getElementById('autoMapBtn').onclick=()=>{ const g=guessColumns(headers); selectIds.forEach(id=>{ document.getElementById('col_'+id).value = g[id] || '(não usar)'; }); };
 document.getElementById('saveColsBtn').onclick=()=>{
   const m=getMappingFromUI();
-  if(!validateMapping(m)){ alert('Preencha pelo menos Estado e Nome do Grupo.'); return; }
+  if(!validateMapping(m)){ alert('Preencha: Nome do Grupo e (Latitude+Longitude) ou Estado.'); return; }
   columnsMap = m; localStorage.setItem('obs_hpcia_mapping', JSON.stringify(m));
   fillSelectOptions(); applyFilters(); drawMarkers(getActiveView()); fitToMarkers(); closeColsModal();
 };
@@ -283,25 +298,25 @@ document.getElementById('resetColsBtn').onclick=()=>{ localStorage.removeItem('o
 /* ===== UI: filtros/contagem/tabela ===== */
 (function buildHead(){const tr=document.getElementById('theadRow'); tableCols.forEach((n,i)=>{const th=document.createElement('th');th.textContent=n;th.onclick=()=>{sortState={idx:i,asc:(sortState.idx===i?!sortState.asc:true)};renderTable(getActiveView());};tr.appendChild(th);});})();
 function uniq(a){return Array.from(new Set(a.filter(x=>x!=null&&String(x).trim()!=='')));}
-
 function fillSelectOptions(){
   const eSel=document.getElementById('estadoSel'), tSel=document.getElementById('tipoInstSel');
   eSel.innerHTML='<option value=\"\">Todos</option>'; tSel.innerHTML='<option value=\"\">Todos</option>';
-  uniq(rawData.map(r=>r[columnsMap.estado]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(e=>{const o=document.createElement('option');o.textContent=e;o.value=e;eSel.appendChild(o);});
+  if(columnsMap.estado){
+    uniq(rawData.map(r=>r[columnsMap.estado]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(e=>{const o=document.createElement('option');o.textContent=e;o.value=e;eSel.appendChild(o);});
+  }
   if(columnsMap.tipoInst){
     uniq(rawData.map(r=>r[columnsMap.tipoInst]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(t=>{const o=document.createElement('option');o.textContent=t;o.value=t;tSel.appendChild(o);});
   }
 }
-
 function applyFilters(){
-  if(!columnsMap.estado || !columnsMap.nomeGrupo) return;
+  if(!columnsMap.nomeGrupo) return;
   const estado=estadoSel.value, tipo=tipoInstSel.value, usaIA=usaIASel.value, temCluster=temClusterSel.value, busca=buscaTxt.value.trim().toLowerCase();
   filtered = rawData.filter(r=>{
-    const byE=!estado || String(r[columnsMap.estado]||'').trim()===estado;
-    const byT=!tipo || String(r[columnsMap.tipoInst]||'').trim()===tipo;
-    const byIA=!usaIA || String(r[columnsMap.usaIA]||'').toLowerCase().includes(usaIA.toLowerCase());
-    let byC=true; if(temCluster){ const v=(r[columnsMap.temCluster50]||'').toString().toLowerCase(); if(temCluster==='Sim')byC=v.includes('sim'); if(temCluster==='Não')byC=v.includes('não')||v.includes('nao'); }
-    const blob=[columnsMap.nomeGrupo,columnsMap.instituicao,columnsMap.cidade,columnsMap.linhas,columnsMap.setor].map(k=>(r[k]||'').toString().toLowerCase()).join(' ');
+    const byE = !columnsMap.estado || !estado || String(r[columnsMap.estado]||'').trim()===estado;
+    const byT = !columnsMap.tipoInst || !tipo || String(r[columnsMap.tipoInst]||'').trim()===tipo;
+    const byIA = !columnsMap.usaIA || !usaIA || String(r[columnsMap.usaIA]||'').toLowerCase().includes(usaIA.toLowerCase());
+    let byC = true; if(columnsMap.temCluster50 && temCluster){ const v=(r[columnsMap.temCluster50]||'').toString().toLowerCase(); if(temCluster==='Sim')byC=v.includes('sim'); if(temCluster==='Não')byC=v.includes('não')||v.includes('nao'); }
+    const blob=[columnsMap.nomeGrupo,columnsMap.instituicao,columnsMap.cidade,columnsMap.linhas,columnsMap.setor].map(k=>k?(r[k]||'').toString().toLowerCase():'').join(' ');
     return byE&&byT&&byIA&&byC&&(!busca||blob.includes(busca));
   });
   if(selectionActive){ selectionFiltered = filtered.filter(r=>isRowInViewport(r)); }
@@ -312,40 +327,52 @@ function renderAll(){
   const v=getActiveView();
   renderLiveResults(v); renderResumo(v); renderTable(v);
   countPill.textContent=`${v.length} ${v.length===1?'grupo':'grupos'}`;
-  statePill.textContent=estadoSel.value||'Brasil';
+  statePill.textContent=(columnsMap.estado && estadoSel.value) ? estadoSel.value : 'Brasil';
   statusMsg.textContent='';
 }
-
 function renderLiveResults(v){
   const box=liveResults;
   if(!v.length){ box.innerHTML='<div class="muted">Sem resultados para os filtros atuais.</div>'; return; }
   box.innerHTML=v.slice(0,150).map(r=>{
-    const nome=r[columnsMap.nomeGrupo]||'—',inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',est=r[columnsMap.estado]||'—',cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
+    const nome=r[columnsMap.nomeGrupo]||'—',inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',est=columnsMap.estado?(r[columnsMap.estado]||'—'):'—',cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
     const site=columnsMap.site?(r[columnsMap.site]||''):'', link=site?` <a href="${String(site).startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:'';
-    return `<div class="result-item"><div><b>${nome}</b></div><div class="muted">${inst} · ${cid} / ${est} · IA: ${ia}${link}</div></div>`;
+    return `<div class="result-item"><div><b>${nome}</b></div><div class="muted">${inst} · ${cid}${columnsMap.estado?' / '+est:''} · IA: ${ia}${link}</div></div>`;
   }).join('') + (v.length>150?`<div class="muted" style="margin-top:6px">… e mais ${v.length-150} resultados</div>`:'');
 }
 function renderResumo(v){
+  // Contagens gerais
   const est=new Set(), cid=new Set(), inst=new Set();
-  v.forEach(r=>{ if(r[columnsMap.estado])est.add(r[columnsMap.estado]); if(columnsMap.cidade && r[columnsMap.cidade])cid.add(r[columnsMap.cidade]); if(columnsMap.instituicao && r[columnsMap.instituicao])inst.add(r[columnsMap.instituicao]); });
-  resumoCounts.innerHTML=`Estados: <b>${est.size}</b> · Cidades: <b>${cid.size}</b> · Instituições: <b>${inst.size}</b>`;
-  const counts={}; v.forEach(r=>{ const e=r[columnsMap.estado]||'—'; counts[e]=(counts[e]||0)+1; });
-  const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5); topEstados.innerHTML=top.length?top.map(([e,c])=>`<div>${e}: <b>${c}</b></div>`).join(''):'—';
+  v.forEach(r=>{ if(columnsMap.estado && r[columnsMap.estado])est.add(r[columnsMap.estado]); if(columnsMap.cidade && r[columnsMap.cidade])cid.add(r[columnsMap.cidade]); if(columnsMap.instituicao && r[columnsMap.instituicao])inst.add(r[columnsMap.instituicao]); });
+  // Geolocalização efetiva
+  const geoOK = v.filter(r => !!getLatLngForRow(r)).length;
+  // Top estados
+  let topHtml='—';
+  if(columnsMap.estado){
+    const counts={}; v.forEach(r=>{ const e=r[columnsMap.estado]||'—'; counts[e]=(counts[e]||0)+1; });
+    const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    topHtml=top.length?top.map(([e,c])=>`<div>${e}: <b>${c}</b></div>`).join(''):'—';
+  }
+  // IA e Tipo
   const ia={'Sim':0,'Não':0}, tipos={};
   v.forEach(r=>{
     if(columnsMap.usaIA){ const t=(r[columnsMap.usaIA]||'').toString().toLowerCase(); if(t.includes('sim'))ia['Sim']++; else if(t.includes('não')||t.includes('nao'))ia['Não']++; }
     const tp=columnsMap.tipoInst?(r[columnsMap.tipoInst]||'—'):'—'; tipos[tp]=(tipos[tp]||0)+1;
   });
   const tiposHtml=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([t,c])=>`${t||'—'}: <b>${c}</b>`).join(' · ');
-  distIAETipo.innerHTML=`IA — Sim: <b>${ia['Sim']}</b> · Não: <b>${ia['Não']}</b><br>${tiposHtml}`;
+  document.getElementById('resumoCounts').innerHTML=
+    `Estados: <b>${est.size}</b> · Cidades: <b>${cid.size}</b> · Instituições: <b>${inst.size}</b><br>`+
+    `Geolocalizados: <b>${geoOK}</b> / Total: <b>${v.length}</b>`;
+  document.getElementById('topEstados').innerHTML=topHtml;
+  document.getElementById('distIAETipo').innerHTML=`IA — Sim: <b>${ia['Sim']}</b> · Não: <b>${ia['Não']}</b><br>${tiposHtml}`;
 }
+(function buildHead(){const tr=document.getElementById('theadRow'); tableCols.forEach((n,i)=>{ /* já criado acima */ });})();
 function renderTable(v){
   const tbody=document.getElementById('tbody');
   const rows=v.map(r=>[
     r[columnsMap.nomeGrupo]||'—',
     columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—',
     columnsMap.tipoInst?(r[columnsMap.tipoInst]||'—'):'—',
-    r[columnsMap.estado]||'—',
+    columnsMap.estado?(r[columnsMap.estado]||'—'):'—',
     columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—',
     columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—',
     columnsMap.linhas?(r[columnsMap.linhas]||'—'):'—',
@@ -368,18 +395,21 @@ function mkStyle(ia,cl){
   return { radius: 7, color:'#0b0f14', weight:2, fillColor:color, fillOpacity:0.95 };
 }
 function getLatLngForRow(r){
-  // 1) Preferir lat/lon do CSV (preciso)
+  // 1) Preferir lat/lon do CSV
   if(columnsMap.lat && columnsMap.lng){
-    const lat = parseFloat(String(r[columnsMap.lat]||'').replace(',','.'));
-    const lng = parseFloat(String(r[columnsMap.lng]||'').replace(',','.'));
+    const lat = parseCoord(r[columnsMap.lat]);
+    const lng = parseCoord(r[columnsMap.lng]);
     if(Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat)<=90 && Math.abs(lng)<=180){
       return [lat,lng];
     }
   }
-  // 2) Normalizar UF e usar cidade + UF (fallback)
-  const uf = normalizeUF(r[columnsMap.estado], columnsMap.cidade? r[columnsMap.cidade] : '');
-  if(!uf) return null;
-  return cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+  // 2) Fallback Cidade+UF (ou capital do estado)
+  if(columnsMap.estado){
+    const uf = normalizeUF(r[columnsMap.estado], columnsMap.cidade? r[columnsMap.cidade] : '');
+    if(!uf) return null;
+    return cityLatLng(columnsMap.cidade? r[columnsMap.cidade] : '', uf);
+  }
+  return null;
 }
 function drawMarkers(v){
   markersLayer.clearLayers(); leafletMarkers = [];
@@ -387,9 +417,9 @@ function drawMarkers(v){
     const ll = getLatLngForRow(r);
     if(!ll) return;
     const style = mkStyle(columnsMap.usaIA? r[columnsMap.usaIA] : '', columnsMap.temCluster50? r[columnsMap.temCluster50] : '');
-    const nome=r[columnsMap.nomeGrupo]||'—', inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—', est=r[columnsMap.estado]||'—', cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—', ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
+    const nome=r[columnsMap.nomeGrupo]||'—', inst=columnsMap.instituicao?(r[columnsMap.instituicao]||'—'):'—', est=columnsMap.estado?(r[columnsMap.estado]||'—'):'—', cid=columnsMap.cidade?(r[columnsMap.cidade]||'—'):'—', ia=columnsMap.usaIA?(r[columnsMap.usaIA]||'—'):'—';
     const site=columnsMap.site?(r[columnsMap.site]||''):'';
-    const html = `<b>${nome}</b><br>${inst}<br>${cid} / ${est}<br>IA: ${ia}${site?`<br><a href="${site.startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:''}`;
+    const html = `<b>${nome}</b><br>${inst}<br>${cid}${columnsMap.estado?' / '+est:''}<br>IA: ${ia}${site?`<br><a href="${site.startsWith('http')?site:'http://'+site}" target="_blank" rel="noopener">site</a>`:''}`;
     const m = L.circleMarker(ll, style).bindPopup(html, { maxWidth: 260 });
     m.addTo(markersLayer);
     leafletMarkers.push(m);
@@ -451,7 +481,8 @@ function bootWithCSV(text){
   const guess = guessColumns(headers);
   columnsMap = Object.assign({}, guess, saved);
 
-  if(!columnsMap.estado || !columnsMap.nomeGrupo){
+  // Se não passou na nova regra (Nome + (Lat/Lon ou Estado)), peça mapeamento.
+  if(!validateMapping(columnsMap)){
     openColsModal();
   }else{
     fillSelectOptions(); applyFilters(); drawMarkers(getActiveView()); fitToMarkers();
