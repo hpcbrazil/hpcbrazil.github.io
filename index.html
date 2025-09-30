@@ -259,7 +259,7 @@ function guessColumns(cols){
     site: find(['Link do site oficial','^Site','Website','URL']),
     email: find(['E-mail de contato','Email','^E-?mail']),
     setor: find(['^Setor econ','^Setor$']),
-    temCluster50: find(['Cluster acima de 50 TF','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF']),
+    temCluster50: find(['^cluster\\s*acima\\s*de\\s*50\\s*tf','cluster.*50\\s*tf(?:lops)?','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF']),
     lat: latExact || find(['^lat$','latitude','^Lat(?:itude)?$']),
     lng: lngExact || find(['^lon$','^lng$','longitude','^Long(?:itude)?$'])
   };
@@ -288,7 +288,17 @@ function preferredMappingForThisCSV(cols){
     const real = findByNormalized(cols, v);
     if (real) m[k] = real;
   }
+
+  // aceitar cabeçalho curto: "Cluster acima de 50 TF"
+const clusterShort = findByNormalized(cols, 'Cluster acima de 50 TF');
+if (clusterShort) m.temCluster50 = clusterShort;
+
+// fallback por tokens (caso o nome varie levemente)
+if (!m.temCluster50) {
+  m.temCluster50 = findHeaderByTokens(cols, ['cluster','50','tf']) || m.temCluster50;
+}
   return m;
+  
 }
 
 function optListFromHeaders(headers, includeNone){
@@ -350,6 +360,16 @@ function fillSelectOptions(){
     uniq(rawData.map(r=>r[columnsMap.tipoInst]||'')).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(t=>{const o=document.createElement('option');o.textContent=t;o.value=t;tSel.appendChild(o);});
   }
 }
+  
+function isYes(v){
+  const s = String(v||'').toLowerCase();
+  return /(sim|yes|true|1|possui)/.test(s);
+}
+function isNo(v){
+  const s = String(v||'').toLowerCase();
+  return /(nao|não|no|false|0)/.test(s);
+}
+  
 function applyFilters(){
   if(!columnsMap.nomeGrupo) return;
   const estado=estadoSel.value, tipo=tipoInstSel.value, usaIA=usaIASel.value, temCluster=temClusterSel.value, busca=buscaTxt.value.trim().toLowerCase();
@@ -357,7 +377,7 @@ function applyFilters(){
     const byE = !columnsMap.estado || !estado || String(r[columnsMap.estado]||'').trim()===estado;
     const byT = !columnsMap.tipoInst || !tipo || String(r[columnsMap.tipoInst]||'').trim()===tipo;
     const byIA = !columnsMap.usaIA || !usaIA || String(r[columnsMap.usaIA]||'').toLowerCase().includes(usaIA.toLowerCase());
-    let byC = true; if(columnsMap.temCluster50 && temCluster){ const v=(r[columnsMap.temCluster50]||'').toString().toLowerCase(); if(temCluster==='Sim')byC=v.includes('sim'); if(temCluster==='Não')byC=v.includes('não')||v.includes('nao'); }
+   let byC = true; if (columnsMap.temCluster50 && temCluster){   const val = r[columnsMap.temCluster50];   if (temCluster === 'Sim') byC = isYes(val);   if (temCluster === 'Não') byC = isNo(val) || !isYes(val); }
     const blob=[columnsMap.nomeGrupo,columnsMap.instituicao,columnsMap.cidade,columnsMap.linhas,columnsMap.setor].map(k=>k?(r[k]||'').toString().toLowerCase():'').join(' ');
     return byE&&byT&&byIA&&byC&&(!busca||blob.includes(busca));
   });
@@ -424,7 +444,7 @@ function renderTable(v){
 /* ===== MARCADORES ===== */
 function mkStyle(ia,cl){
   const i = columnsMap.usaIA && String(ia||'').toLowerCase().includes('sim');
-  const c = columnsMap.temCluster50 && String(cl||'').toLowerCase().includes('sim');
+  const c = columnsMap.temCluster50 && isYes(cl);
   let color = '#94a3b8'; // slate
   if(i && c) color = '#f59e0b';
   else if(i && !c) color = '#10b981';
