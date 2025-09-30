@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Observatório HPC & IA — Brasil (GitHub Pages, online • Lat/Lon do CSV)</title>
+<title>Observatório HPC & IA — Brasil</title>
 
 <!-- Leaflet (mapa online) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -57,7 +57,7 @@
 </head>
 <body>
 <header>
-  <h1>Observatório HPC & IA — Brasil <span class="muted" style="font-weight:normal">· GitHub Pages (online • Lat/Lon do CSV)</span></h1>
+  <h1>Observatório HPC & IA — Brasil</h1>
 </header>
 
 <div class="container">
@@ -259,7 +259,7 @@ function guessColumns(cols){
     site: find(['Link do site oficial','^Site','Website','URL']),
     email: find(['E-mail de contato','Email','^E-?mail']),
     setor: find(['^Setor econ','^Setor$']),
-    temCluster50: find(['cluster.*50\\s*TFlops','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF']),
+    temCluster50: find(['Cluster acima de 50 TF','capacidade superior a 50\\s*TFlops','Cluster .*50','>\\s*50\\s*TF','\\b50\\s*TF']),
     lat: latExact || find(['^lat$','latitude','^Lat(?:itude)?$']),
     lng: lngExact || find(['^lon$','^lng$','longitude','^Long(?:itude)?$'])
   };
@@ -279,7 +279,7 @@ function preferredMappingForThisCSV(cols){
     email: 'E-mail de contato do grupo',
     setor: 'Setor econômico',
     usaIA: 'O grupo utiliza Inteligência Artificial (IA) em suas pesquisas?',
-    temCluster50: 'O grupo possui ou é responsável direto por algum cluster (próprio ou institucional) com capacidade superior a 50 TFLOPS?',
+    temCluster50: 'Cluster acima de 50 TF',
     lat: 'Latitude',
     lng: 'Longitude'
   };
